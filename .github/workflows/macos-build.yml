@@ -6,7 +6,7 @@ on:
   pull_request:
 
 jobs:
-  build:
+  build-and-test:
     runs-on: macos-15
 
     steps:
@@ -28,3 +28,13 @@ jobs:
             -destination 'platform=macOS' \
             CODE_SIGNING_ALLOWED=NO \
             build
+
+      - name: Test
+        run: |
+          xcodebuild \
+            -project Breadcrumb.xcodeproj \
+            -scheme Breadcrumb \
+            -configuration Debug \
+            -destination 'platform=macOS' \
+            CODE_SIGNING_ALLOWED=NO \
+            test
