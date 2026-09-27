@@ -1,53 +1,85 @@
 import AppKit
 import SwiftUI
 
-final class OverlayManager {
-    private struct Marker {
-        let id = UUID()
-        let text: String
-        let bundleIdentifier: String
-        let panel: NSPanel
-    }
+final class OverlayManager: NSObject, NSWindowDelegate {
+    private let contextObserver: ContextObserver
+    private let store: BreadcrumbStore
 
-    private var markers: [Marker] = []
-    private var observer: NSObjectProtocol?
+    private var records: [BreadcrumbRecord]
+    private var panels: [UUID: NSPanel] = [:]
+    private var panelToRecord: [ObjectIdentifier: UUID] = [:]
+    private var workspaceObserver: NSObjectProtocol?
+    private var refreshTimer: Timer?
+    private var programmaticMoves: Set<UUID> = []
+
+    init(contextObserver: ContextObserver, store: BreadcrumbStore) {
+        self.contextObserver = contextObserver
+        self.store = store
+        self.records = store.load()
+        super.init()
+    }
 
     deinit {
-        if let observer {
-            NSWorkspace.shared.notificationCenter.removeObserver(observer)
+        if let workspaceObserver {
+            NSWorkspace.shared.notificationCenter.removeObserver(workspaceObserver)
         }
+        refreshTimer?.invalidate()
     }
 
-    func startObservingApplications() {
-        observer = NSWorkspace.shared.notificationCenter.addObserver(
+    func start() {
+        for record in records where !record.isArchived {
+            createPanelIfNeeded(for: record)
+        }
+
+        workspaceObserver = NSWorkspace.shared.notificationCenter.addObserver(
             forName: NSWorkspace.didActivateApplicationNotification,
             object: nil,
             queue: .main
         ) { [weak self] _ in
-            self?.refreshVisibility()
-        }
-    }
-
-    func addBreadcrumb(text: String, near point: NSPoint) {
-        guard let activeApp = NSWorkspace.shared.frontmostApplication,
-              let bundleIdentifier = activeApp.bundleIdentifier else {
-            return
+            self?.refresh()
         }
 
-        let panel = makeMarkerPanel(text: text, point: point)
-        let marker = Marker(text: text, bundleIdentifier: bundleIdentifier, panel: panel)
-        markers.append(marker)
+        refreshTimer = Timer.scheduledTimer(
+            withTimeInterval: 0.18,
+            repeats: true
+        ) { [weak self] _ in
+            self?.refresh()
+        }
 
-        panel.orderFrontRegardless()
-        refreshVisibility()
+        refresh()
     }
 
-    private func makeMarkerPanel(text: String, point: NSPoint) -> NSPanel {
-        let size = NSSize(width: 18, height: 18)
-        let origin = NSPoint(x: point.x - 9, y: point.y - 9)
+    func addBreadcrumb(
+        text: String,
+        near point: NSPoint,
+        context: ContextSnapshot
+    ) {
+        let record = BreadcrumbRecord(
+            text: text,
+            context: context,
+            anchorPoint: point
+        )
+
+        records.append(record)
+        store.save(records)
+
+        createPanelIfNeeded(for: record)
+        refresh(preferredContext: context)
+    }
+
+    private func createPanelIfNeeded(for record: BreadcrumbRecord) {
+        guard panels[record.id] == nil else { return }
+
+        let size = NSSize(width: 20, height: 20)
+        let fallbackPoint = record.anchorPoint(in: nil)
 
         let panel = NSPanel(
-            contentRect: NSRect(origin: origin, size: size),
+            contentRect: NSRect(
+                x: fallbackPoint.x - size.width / 2,
+                y: fallbackPoint.y - size.height / 2,
+                width: size.width,
+                height: size.height
+            ),
             styleMask: [.borderless, .nonactivatingPanel],
             backing: .buffered,
             defer: false
@@ -60,23 +92,91 @@ final class OverlayManager {
         panel.collectionBehavior = [.moveToActiveSpace, .fullScreenAuxiliary]
         panel.isMovableByWindowBackground = true
         panel.hidesOnDeactivate = false
-        panel.contentView = NSHostingView(rootView: BreadcrumbMarkerView(text: text))
+        panel.delegate = self
+        panel.contentView = NSHostingView(
+            rootView: BreadcrumbMarkerView(
+                text: record.text,
+                applicationName: record.applicationName
+            )
+        )
 
-        return panel
+        panels[record.id] = panel
+        panelToRecord[ObjectIdentifier(panel)] = record.id
     }
 
-    private func refreshVisibility() {
-        guard let activeBundle = NSWorkspace.shared.frontmostApplication?.bundleIdentifier else {
-            markers.forEach { $0.panel.orderOut(nil) }
+    private func refresh(preferredContext: ContextSnapshot? = nil) {
+        guard let context = preferredContext ?? contextObserver.captureCurrent() else {
+            hideAll()
             return
         }
 
-        for marker in markers {
-            if marker.bundleIdentifier == activeBundle {
-                marker.panel.orderFrontRegardless()
-            } else {
-                marker.panel.orderOut(nil)
+        for index in records.indices where !records[index].isArchived {
+            let record = records[index]
+            guard let panel = panels[record.id] else { continue }
+
+            guard context.matches(record) else {
+                panel.orderOut(nil)
+                continue
             }
+
+            let point = record.anchorPoint(in: context.windowFrame)
+            reposition(panel, recordID: record.id, center: point)
+            panel.orderFrontRegardless()
         }
+    }
+
+    private func reposition(
+        _ panel: NSPanel,
+        recordID: UUID,
+        center point: CGPoint
+    ) {
+        let origin = CGPoint(
+            x: point.x - panel.frame.width / 2,
+            y: point.y - panel.frame.height / 2
+        )
+
+        guard abs(panel.frame.origin.x - origin.x) > 0.5
+                || abs(panel.frame.origin.y - origin.y) > 0.5 else {
+            return
+        }
+
+        programmaticMoves.insert(recordID)
+        panel.setFrameOrigin(origin)
+        programmaticMoves.remove(recordID)
+    }
+
+    private func hideAll() {
+        panels.values.forEach { $0.orderOut(nil) }
+    }
+
+    func windowDidMove(_ notification: Notification) {
+        guard let panel = notification.object as? NSPanel,
+              let recordID = panelToRecord[ObjectIdentifier(panel)],
+              !programmaticMoves.contains(recordID),
+              let recordIndex = records.firstIndex(where: { $0.id == recordID }),
+              let context = contextObserver.captureCurrent(),
+              context.matches(records[recordIndex]),
+              let frame = context.windowFrame,
+              frame.width > 0,
+              frame.height > 0 else {
+            return
+        }
+
+        let center = CGPoint(
+            x: panel.frame.midX,
+            y: panel.frame.midY
+        )
+
+        records[recordIndex].relativeX = min(
+            max((center.x - frame.minX) / frame.width, 0),
+            1
+        )
+        records[recordIndex].relativeY = min(
+            max((center.y - frame.minY) / frame.height, 0),
+            1
+        )
+        records[recordIndex].updatedAt = Date()
+
+        store.save(records)
     }
 }
