@@ -11,6 +11,26 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         store: store
     )
 
+    private lazy var historyController = HistoryWindowController(
+        recordsProvider: { [weak self] in
+            self?.overlayManager.allRecords ?? []
+        },
+        onRestore: { [weak self] id in
+            self?.overlayManager.restore(id)
+            self?.rebuildMenu()
+        },
+        onArchive: { [weak self] id in
+            self?.overlayManager.archive(id)
+            self?.rebuildMenu()
+        }
+    )
+
+    private lazy var onboardingController = OnboardingWindowController(
+        onFinish: { [weak self] in
+            self?.rebuildMenu()
+        }
+    )
+
     private var hotKeyManager: HotKeyManager!
     private var composerController: ComposerController!
 
@@ -29,6 +49,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                     near: point,
                     context: context
                 )
+                self?.rebuildMenu()
             }
         )
 
@@ -38,6 +59,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         ComposerController.shared = composerController
         overlayManager.start()
+
+        if !UserDefaults.standard.bool(forKey: "breadcrumb.onboarding.completed") {
+            onboardingController.present()
+        }
     }
 
     private func configureMenuBar() {
@@ -60,6 +85,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         )
         newItem.keyEquivalentModifierMask = [.option]
         menu.addItem(newItem)
+
+        let activeCount = overlayManager.allRecords.filter { !$0.isArchived }.count
+        let libraryTitle = activeCount == 0
+            ? "Breadcrumbs…"
+            : "Breadcrumbs…  \(activeCount)"
+
+        menu.addItem(
+            NSMenuItem(
+                title: libraryTitle,
+                action: #selector(openHistory),
+                keyEquivalent: ""
+            )
+        )
 
         if !PermissionManager.hasAccessibilityAccess {
             menu.addItem(.separator())
@@ -94,6 +132,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     @objc private func newBreadcrumb() {
         composerController.present()
+    }
+
+    @objc private func openHistory() {
+        historyController.present()
     }
 
     @objc private func enableWindowAwareness() {
