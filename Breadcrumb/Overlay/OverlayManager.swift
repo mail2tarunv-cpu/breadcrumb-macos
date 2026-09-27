@@ -4,6 +4,7 @@ import SwiftUI
 final class OverlayManager: NSObject, NSWindowDelegate {
     private let contextObserver: ContextObserver
     private let store: BreadcrumbStore
+    private let editorController = BreadcrumbEditorController()
 
     private var records: [BreadcrumbRecord]
     private var panels: [UUID: NSPanel] = [:]
@@ -24,6 +25,10 @@ final class OverlayManager: NSObject, NSWindowDelegate {
             NSWorkspace.shared.notificationCenter.removeObserver(workspaceObserver)
         }
         refreshTimer?.invalidate()
+    }
+
+    var allRecords: [BreadcrumbRecord] {
+        records
     }
 
     func start() {
@@ -61,14 +66,60 @@ final class OverlayManager: NSObject, NSWindowDelegate {
         )
 
         records.append(record)
-        store.save(records)
+        persist()
 
         createPanelIfNeeded(for: record)
         refresh(preferredContext: context)
     }
 
+    func archive(_ id: UUID) {
+        guard let index = records.firstIndex(where: { $0.id == id }) else { return }
+
+        records[index].isArchived = true
+        records[index].updatedAt = Date()
+        persist()
+
+        panels[id]?.orderOut(nil)
+        editorController.dismiss()
+    }
+
+    func restore(_ id: UUID) {
+        guard let index = records.firstIndex(where: { $0.id == id }) else { return }
+
+        records[index].isArchived = false
+        records[index].updatedAt = Date()
+        persist()
+
+        createPanelIfNeeded(for: records[index])
+        refresh()
+    }
+
+    func updateText(_ id: UUID, text: String) {
+        guard let index = records.firstIndex(where: { $0.id == id }) else { return }
+
+        records[index].text = text
+        records[index].updatedAt = Date()
+        persist()
+        rebuildPanel(for: records[index])
+        refresh()
+    }
+
+    private func persist() {
+        store.save(records)
+    }
+
+    private func rebuildPanel(for record: BreadcrumbRecord) {
+        if let oldPanel = panels[record.id] {
+            panelToRecord.removeValue(forKey: ObjectIdentifier(oldPanel))
+            oldPanel.orderOut(nil)
+            panels.removeValue(forKey: record.id)
+        }
+
+        createPanelIfNeeded(for: record)
+    }
+
     private func createPanelIfNeeded(for record: BreadcrumbRecord) {
-        guard panels[record.id] == nil else { return }
+        guard panels[record.id] == nil, !record.isArchived else { return }
 
         let size = NSSize(width: 20, height: 20)
         let fallbackPoint = record.anchorPoint(in: nil)
@@ -93,15 +144,42 @@ final class OverlayManager: NSObject, NSWindowDelegate {
         panel.isMovableByWindowBackground = true
         panel.hidesOnDeactivate = false
         panel.delegate = self
+
         panel.contentView = NSHostingView(
             rootView: BreadcrumbMarkerView(
                 text: record.text,
-                applicationName: record.applicationName
+                applicationName: record.applicationName,
+                onOpen: { [weak self] in
+                    self?.openEditor(for: record.id)
+                }
             )
         )
 
         panels[record.id] = panel
         panelToRecord[ObjectIdentifier(panel)] = record.id
+    }
+
+    private func openEditor(for id: UUID) {
+        guard let record = records.first(where: { $0.id == id }),
+              let panel = panels[id] else {
+            return
+        }
+
+        let anchorPoint = CGPoint(
+            x: panel.frame.midX,
+            y: panel.frame.midY
+        )
+
+        editorController.present(
+            record: record,
+            near: anchorPoint,
+            onSave: { [weak self] text in
+                self?.updateText(id, text: text)
+            },
+            onArchive: { [weak self] in
+                self?.archive(id)
+            }
+        )
     }
 
     private func refresh(preferredContext: ContextSnapshot? = nil) {
@@ -177,6 +255,6 @@ final class OverlayManager: NSObject, NSWindowDelegate {
         )
         records[recordIndex].updatedAt = Date()
 
-        store.save(records)
+        persist()
     }
 }
