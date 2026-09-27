@@ -9,6 +9,7 @@ final class ContextObserver {
         }
 
         let appName = app.localizedName ?? bundleIdentifier
+
         guard AXIsProcessTrusted() else {
             return ContextSnapshot(
                 bundleIdentifier: bundleIdentifier,
@@ -19,7 +20,11 @@ final class ContextObserver {
         }
 
         let appElement = AXUIElementCreateApplication(app.processIdentifier)
-        guard let window = copyElementAttribute(appElement, kAXFocusedWindowAttribute as CFString) else {
+
+        guard let window = copyElementAttribute(
+            appElement,
+            kAXFocusedWindowAttribute as CFString
+        ) else {
             return ContextSnapshot(
                 bundleIdentifier: bundleIdentifier,
                 applicationName: appName,
@@ -28,7 +33,10 @@ final class ContextObserver {
             )
         }
 
-        let title = copyStringAttribute(window, kAXTitleAttribute as CFString)
+        let title = copyStringAttribute(
+            window,
+            kAXTitleAttribute as CFString
+        )
         let frame = copyWindowFrame(window)
 
         return ContextSnapshot(
@@ -39,17 +47,38 @@ final class ContextObserver {
         )
     }
 
-    private func copyElementAttribute(_ element: AXUIElement, _ attribute: CFString) -> AXUIElement? {
+    private func copyElementAttribute(
+        _ element: AXUIElement,
+        _ attribute: CFString
+    ) -> AXUIElement? {
         var value: CFTypeRef?
-        let result = AXUIElementCopyAttributeValue(element, attribute, &value)
-        guard result == .success, let value else { return nil }
-        return (value as! AXUIElement)
+
+        guard AXUIElementCopyAttributeValue(
+            element,
+            attribute,
+            &value
+        ) == .success,
+        let value else {
+            return nil
+        }
+
+        return unsafeBitCast(value, to: AXUIElement.self)
     }
 
-    private func copyStringAttribute(_ element: AXUIElement, _ attribute: CFString) -> String? {
+    private func copyStringAttribute(
+        _ element: AXUIElement,
+        _ attribute: CFString
+    ) -> String? {
         var value: CFTypeRef?
-        let result = AXUIElementCopyAttributeValue(element, attribute, &value)
-        guard result == .success else { return nil }
+
+        guard AXUIElementCopyAttributeValue(
+            element,
+            attribute,
+            &value
+        ) == .success else {
+            return nil
+        }
+
         return value as? String
     }
 
@@ -67,10 +96,13 @@ final class ContextObserver {
             kAXSizeAttribute as CFString,
             &sizeRef
         ) == .success,
-        let positionValue = positionRef as? AXValue,
-        let sizeValue = sizeRef as? AXValue else {
+        let positionRef,
+        let sizeRef else {
             return nil
         }
+
+        let positionValue = unsafeBitCast(positionRef, to: AXValue.self)
+        let sizeValue = unsafeBitCast(sizeRef, to: AXValue.self)
 
         var position = CGPoint.zero
         var size = CGSize.zero
