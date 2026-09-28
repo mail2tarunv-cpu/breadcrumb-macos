@@ -61,6 +61,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var composerController: ComposerController!
     private var shortcutObserver: NSObjectProtocol?
 
+    deinit {
+        if let shortcutObserver {
+            NotificationCenter.default.removeObserver(shortcutObserver)
+        }
+    }
+
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.accessory)
 
