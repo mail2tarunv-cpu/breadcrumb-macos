@@ -86,7 +86,7 @@ struct SettingsView: View {
                 Toggle("Show context summary automatically", isOn: $autoResumeEnabled)
 
                 if autoResumeEnabled {
-                    Picker("Show again after", selection: $autoResumeCooldownMinutes) {
+                    Picker("Resurface after being away", selection: $autoResumeCooldownMinutes) {
                         Text("5 minutes").tag(5.0)
                         Text("15 minutes").tag(15.0)
                         Text("30 minutes").tag(30.0)
@@ -94,9 +94,13 @@ struct SettingsView: View {
                     }
                 }
 
-                Text("When you return to a window or tab with two or more active breadcrumbs, Breadcrumb can briefly show them together.")
+                Text("Breadcrumb only resurfaces the summary after you leave a context for the selected amount of time and then return.")
                     .font(.system(size: 11))
                     .foregroundStyle(.secondary)
+
+                Text("Contexts with 5 or more active breadcrumbs collapse into one compact stack instead of covering the window with pills.")
+                    .font(.system(size: 11))
+                    .foregroundStyle(.tertiary)
             }
         }
         .formStyle(.grouped)
@@ -143,7 +147,7 @@ struct SettingsView: View {
 
             Section("About") {
                 LabeledContent("Breadcrumb") {
-                    Text("Version 1.3")
+                    Text("Version 1.4")
                         .foregroundStyle(.secondary)
                 }
             }
