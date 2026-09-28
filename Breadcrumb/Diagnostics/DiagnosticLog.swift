@@ -35,6 +35,38 @@ final class DiagnosticLog {
         defaults.set(data, forKey: storageKey)
     }
 
+    func supportSummary() -> String {
+        let recent = events.suffix(40)
+        let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "unknown"
+        let build = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "unknown"
+        let os = ProcessInfo.processInfo.operatingSystemVersionString
+        let permission = PermissionManager.hasAccessibilityAccess ? "enabled" : "not enabled"
+
+        let categoryCounts = Dictionary(grouping: events, by: \.category)
+            .map { key, value in "\(key): \(value.count)" }
+            .sorted()
+            .joined(separator: ", ")
+
+        let lines = recent.map { event in
+            let timestamp = event.timestamp.formatted(
+                date: .abbreviated,
+                time: .standard
+            )
+            return "[\(timestamp)] \(event.category) — \(event.summary)"
+        }
+
+        return ([
+            "Breadcrumb Support Summary",
+            "Version: \(version) (\(build))",
+            "macOS: \(os)",
+            "Accessibility: \(permission)",
+            "Events: \(events.count)",
+            "Categories: \(categoryCounts.isEmpty ? "none" : categoryCounts)",
+            "",
+            "Recent event summaries (note text and diagnostic detail omitted):"
+        ] + lines).joined(separator: "\n")
+    }
+
     func clear() {
         defaults.removeObject(forKey: storageKey)
     }
