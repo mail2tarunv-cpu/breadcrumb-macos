@@ -121,6 +121,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         menu.addItem(
             NSMenuItem(
+                title: "Resume Current Context…",
+                action: #selector(resumeCurrentContext),
+                keyEquivalent: ""
+            )
+        )
+
+        menu.addItem(
+            NSMenuItem(
                 title: "Context Diagnostics…",
                 action: #selector(openDiagnostics),
                 keyEquivalent: ""
@@ -164,6 +172,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     @objc private func openHistory() {
         historyController.present()
+    }
+
+    @objc private func resumeCurrentContext() {
+        overlayManager.presentResumeContext()
     }
 
     @objc private func openDiagnostics() {
