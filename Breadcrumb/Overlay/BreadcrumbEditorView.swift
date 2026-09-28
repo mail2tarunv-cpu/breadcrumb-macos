@@ -72,6 +72,7 @@ struct BreadcrumbEditorView: View {
             TextEditor(text: $text)
                 .font(.system(size: 15))
                 .scrollContentBackground(.hidden)
+                .scrollIndicators(.hidden)
                 .frame(minHeight: 118, maxHeight: 190)
                 .focused($isFocused)
                 .padding(9)
@@ -79,9 +80,12 @@ struct BreadcrumbEditorView: View {
                 .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
 
             HStack {
-                Text("Left (createdAt.formatted(.relative(presentation: .named)))")
-                    .font(.system(size: 10.5))
-                    .foregroundStyle(.tertiary)
+                HStack(spacing: 3) {
+                    Text("Left")
+                    Text(createdAt, style: .relative)
+                }
+                .font(.system(size: 10.5))
+                .foregroundStyle(.tertiary)
 
                 Spacer()
 
