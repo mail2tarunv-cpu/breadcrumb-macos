@@ -12,7 +12,17 @@ private final class MarkerHostingView<Content: View>: NSHostingView<Content> {
         true
     }
 
+    override func hitTest(_ point: NSPoint) -> NSView? {
+        bounds.contains(point) ? self : nil
+    }
+
+    override func resetCursorRects() {
+        super.resetCursorRects()
+        addCursorRect(bounds, cursor: .pointingHand)
+    }
+
     override func mouseDown(with event: NSEvent) {
+        NSCursor.closedHand.push()
         mouseDownScreenPoint = NSEvent.mouseLocation
         startingWindowOrigin = window?.frame.origin
     }
@@ -37,6 +47,8 @@ private final class MarkerHostingView<Content: View>: NSHostingView<Content> {
     }
 
     override func mouseUp(with event: NSEvent) {
+        NSCursor.pop()
+
         guard let window,
               let mouseDownScreenPoint else {
             resetGesture()
@@ -234,7 +246,7 @@ final class OverlayManager: NSObject {
             return
         }
 
-        let size = NSSize(width: 24, height: 24)
+        let size = NSSize(width: 132, height: 34)
         let fallbackPoint = record.anchorPoint(in: nil)
 
         let panel = NSPanel(
@@ -252,6 +264,7 @@ final class OverlayManager: NSObject {
         panel.isOpaque = false
         panel.backgroundColor = .clear
         panel.hasShadow = false
+        panel.isMovable = false
         panel.level = .floating
         panel.collectionBehavior = [.moveToActiveSpace, .fullScreenAuxiliary]
         panel.hidesOnDeactivate = false
