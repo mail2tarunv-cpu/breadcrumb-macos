@@ -3,13 +3,14 @@ import SwiftUI
 struct BreadcrumbMarkerView: View {
     let text: String
     let applicationName: String
+    let breadcrumbColor: BreadcrumbColor
 
     @State private var isHovering = false
 
     var body: some View {
         HStack(spacing: 7) {
             Circle()
-                .fill(.secondary.opacity(isHovering ? 0.75 : 0.52))
+                .fill(breadcrumbColor.color)
                 .frame(width: 7, height: 7)
 
             Text(text)
@@ -33,7 +34,13 @@ struct BreadcrumbMarkerView: View {
         .clipShape(Capsule())
         .overlay {
             Capsule()
-                .stroke(.primary.opacity(isHovering ? 0.13 : 0.07), lineWidth: 0.5)
+                .fill(breadcrumbColor.color.opacity(isHovering ? 0.18 : 0.12))
+                .allowsHitTesting(false)
+        }
+        .overlay {
+            Capsule()
+                .stroke(breadcrumbColor.color.opacity(isHovering ? 0.55 : 0.35), lineWidth: 0.6)
+                .allowsHitTesting(false)
         }
         .shadow(radius: isHovering ? 8 : 5, y: 3)
         .scaleEffect(isHovering ? 1.015 : 1)
