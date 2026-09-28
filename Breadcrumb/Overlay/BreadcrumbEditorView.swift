@@ -3,6 +3,7 @@ import SwiftUI
 struct BreadcrumbEditorView: View {
     @State private var text: String
     @FocusState private var isFocused: Bool
+    @State private var showDeleteConfirmation = false
 
     let applicationName: String
     let windowTitle: String?
@@ -10,6 +11,7 @@ struct BreadcrumbEditorView: View {
     let onSave: (String) -> Void
     let onArchive: () -> Void
     let onDelete: () -> Void
+    let onSnooze: (Date) -> Void
     let onClose: () -> Void
 
     init(
@@ -20,6 +22,7 @@ struct BreadcrumbEditorView: View {
         onSave: @escaping (String) -> Void,
         onArchive: @escaping () -> Void,
         onDelete: @escaping () -> Void,
+        onSnooze: @escaping (Date) -> Void,
         onClose: @escaping () -> Void
     ) {
         _text = State(initialValue: text)
@@ -29,6 +32,7 @@ struct BreadcrumbEditorView: View {
         self.onSave = onSave
         self.onArchive = onArchive
         self.onDelete = onDelete
+        self.onSnooze = onSnooze
         self.onClose = onClose
     }
 
@@ -90,9 +94,18 @@ struct BreadcrumbEditorView: View {
                 Spacer()
 
                 Menu {
+                    Button("Snooze for 1 Hour", systemImage: "clock") {
+                        onSnooze(Date().addingTimeInterval(60 * 60))
+                    }
+                    Button("Snooze for 1 Day", systemImage: "moon.zzz") {
+                        onSnooze(Date().addingTimeInterval(60 * 60 * 24))
+                    }
+                    Divider()
                     Button("Archive", systemImage: "archivebox", action: onArchive)
                     Divider()
-                    Button("Delete Permanently", systemImage: "trash", role: .destructive, action: onDelete)
+                    Button("Delete Permanently", systemImage: "trash", role: .destructive) {
+                        showDeleteConfirmation = true
+                    }
                 } label: {
                     Image(systemName: "ellipsis")
                         .frame(width: 26, height: 22)
@@ -117,6 +130,16 @@ struct BreadcrumbEditorView: View {
         .overlay {
             RoundedRectangle(cornerRadius: 18, style: .continuous)
                 .stroke(.primary.opacity(0.09), lineWidth: 0.7)
+        }
+        .confirmationDialog(
+            "Delete this breadcrumb permanently?",
+            isPresented: $showDeleteConfirmation,
+            titleVisibility: .visible
+        ) {
+            Button("Delete Permanently", role: .destructive, action: onDelete)
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("This cannot be undone.")
         }
         .onAppear {
             DispatchQueue.main.async { isFocused = true }
