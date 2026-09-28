@@ -19,6 +19,7 @@ final class ResumeContextController {
         near frame: CGRect?,
         onEdit: @escaping (UUID) -> Void,
         onArchive: @escaping (UUID) -> Void,
+        onDone: @escaping (UUID) -> Void,
         onSnooze: @escaping (UUID, Date) -> Void
     ) {
         dismiss()
@@ -73,6 +74,9 @@ final class ResumeContextController {
             },
             onArchive: { id in
                 onArchive(id)
+            },
+            onDone: { id in
+                onDone(id)
             },
             onSnooze: { id, date in
                 onSnooze(id, date)
