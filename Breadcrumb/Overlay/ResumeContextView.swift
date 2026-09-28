@@ -93,15 +93,26 @@ struct ResumeContextView: View {
                 }
             }
 
-            if records.count > 5 {
-                Divider()
-                Text("+\(records.count - 5) more in this context")
-                    .font(.system(size: 10.5))
-                    .foregroundStyle(.secondary)
-                    .padding(.vertical, 9)
+            Divider()
+
+            HStack {
+                if records.count > 5 {
+                    Text("+\(records.count - 5) more in this context")
+                } else {
+                    Text("\(records.count) active breadcrumb\(records.count == 1 ? "" : "s")")
+                }
+
+                Spacer()
+
+                Text("Esc to close")
             }
+            .font(.system(size: 10))
+            .foregroundStyle(.tertiary)
+            .padding(.horizontal, 14)
+            .padding(.vertical, 8)
         }
         .frame(width: 390)
         .background(Color(nsColor: .windowBackgroundColor))
+        .onExitCommand(perform: onClose)
     }
 }
