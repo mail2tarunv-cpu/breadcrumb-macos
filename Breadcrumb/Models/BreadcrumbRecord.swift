@@ -20,6 +20,7 @@ struct BreadcrumbRecord: Codable, Identifiable, Equatable {
     let createdAt: Date
     var updatedAt: Date
     var isArchived: Bool
+    var snoozedUntil: Date?
 
     init(
         id: UUID = UUID(),
@@ -44,6 +45,7 @@ struct BreadcrumbRecord: Codable, Identifiable, Equatable {
         self.createdAt = Date()
         self.updatedAt = Date()
         self.isArchived = false
+        self.snoozedUntil = nil
 
         if let frame = context.windowFrame, frame.width > 0, frame.height > 0 {
             self.relativeX = min(max((anchorPoint.x - frame.minX) / frame.width, 0), 1)
@@ -52,6 +54,11 @@ struct BreadcrumbRecord: Codable, Identifiable, Equatable {
             self.relativeX = 0.5
             self.relativeY = 0.5
         }
+    }
+
+    var isSnoozed: Bool {
+        guard let snoozedUntil else { return false }
+        return snoozedUntil > Date()
     }
 
     var isLegacyContext: Bool {
