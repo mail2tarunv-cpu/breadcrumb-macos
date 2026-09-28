@@ -62,6 +62,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         ComposerController.shared = composerController
         overlayManager.start()
 
+        if !PermissionManager.hasAccessibilityAccess {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+                PermissionManager.requestAccessibilityAccess()
+            }
+        }
+
         if !UserDefaults.standard.bool(forKey: "breadcrumb.onboarding.completed") {
             onboardingController.present()
         }
