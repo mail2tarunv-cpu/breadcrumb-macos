@@ -25,7 +25,7 @@ final class ResumeContextController {
 
         guard !records.isEmpty else { return }
 
-        let height = min(CGFloat(92 + min(records.count, 5) * 61 + (records.count > 5 ? 32 : 0)), 430)
+        let height = min(CGFloat(92 + min(records.count, 6) * 61 + 32), 430)
         let size = NSSize(width: 390, height: height)
 
         let origin: CGPoint
