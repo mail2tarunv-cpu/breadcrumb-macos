@@ -15,17 +15,17 @@ struct BreadcrumbMarkerView: View {
                     .fill(.regularMaterial)
 
                 Circle()
-                    .stroke(.primary.opacity(0.14), lineWidth: 0.5)
+                    .stroke(.primary.opacity(0.16), lineWidth: 0.5)
 
                 Circle()
-                    .fill(.primary.opacity(isHovering ? 0.88 : 0.58))
-                    .frame(width: 5, height: 5)
+                    .fill(.primary.opacity(isHovering ? 0.92 : 0.62))
+                    .frame(width: 6, height: 6)
             }
-            .frame(width: 20, height: 20)
+            .frame(width: 24, height: 24)
             .contentShape(Circle())
         }
         .buttonStyle(.plain)
-        .scaleEffect(isHovering && !reduceMotion ? 1.08 : 1)
+        .scaleEffect(isHovering && !reduceMotion ? 1.10 : 1)
         .animation(
             reduceMotion ? nil : .easeOut(duration: 0.12),
             value: isHovering
@@ -35,5 +35,6 @@ struct BreadcrumbMarkerView: View {
             isHovering = hovering
         }
         .accessibilityLabel("Breadcrumb: " + text)
+        .accessibilityHint("Opens this breadcrumb")
     }
 }
