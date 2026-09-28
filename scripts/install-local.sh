@@ -10,29 +10,31 @@ INSTALL_PATH="/Applications/$APP_NAME.app"
 
 cd "$ROOT_DIR"
 
-echo "→ Looking for an Apple Development signing identity"
-IDENTITY_LINE="$(
-  security find-identity -v -p codesigning 2>/dev/null \
-    | grep '"Apple Development:' \
-    | head -n 1 \
-    || true
-)"
+echo "→ Looking for a valid macOS code-signing identity"
+
+IDENTITIES="$(security find-identity -v -p codesigning 2>/dev/null || true)"
+IDENTITY_LINE="$(echo "$IDENTITIES" | grep -E '[0-9A-F]{40}' | head -n 1 || true)"
 
 if [[ -z "$IDENTITY_LINE" ]]; then
   echo
-  echo "No Apple Development signing identity was found on this Mac."
+  echo "Xcode shows a development certificate, but macOS Keychain is not exposing"
+  echo "a usable code-signing identity to the command line yet."
   echo
-  echo "Open Xcode → Settings → Accounts, sign in with your Apple ID,"
-  echo "then select your account → Manage Certificates… → + → Apple Development."
+  echo "Detected identities:"
+  echo "$IDENTITIES"
   echo
-  echo "After Xcode creates the certificate, run this installer again."
+  echo "In Xcode → Settings → Accounts → Manage Certificates…, make sure the"
+  echo "Apple Development certificate has no warning/error status. Then quit and"
+  echo "reopen Xcode and run this installer again."
   exit 2
 fi
 
 SIGNING_IDENTITY="$(echo "$IDENTITY_LINE" | awk '{print $2}')"
 SIGNING_NAME="$(echo "$IDENTITY_LINE" | sed -E 's/^[[:space:]]*[0-9]+\) [0-9A-F]+ "(.*)"$/\1/')"
 
-echo "✓ Using: $SIGNING_NAME"
+echo "✓ Found valid signing identity"
+echo "  Name: $SIGNING_NAME"
+echo "  SHA-1: $SIGNING_IDENTITY"
 echo
 
 echo "→ Generating Xcode project"
