@@ -94,10 +94,21 @@ final class OverlayManager: NSObject {
     private var lastDecisionByRecord: [UUID: String] = [:]
     private var editingRecordID: UUID?
 
+    private var autoResumeCandidateKey: String?
+    private var autoResumeCandidateSince: Date?
+    private var lastAutoResumeByContext: [String: Date] = [:]
+
+    private let autoResumeEnabledKey = "breadcrumb.resume.autoEnabled"
+    private let autoResumeCooldownKey = "breadcrumb.resume.cooldownMinutes"
+
     init(contextObserver: ContextObserver, store: BreadcrumbStore) {
         self.contextObserver = contextObserver
         self.store = store
         self.records = store.load()
+        UserDefaults.standard.register(defaults: [
+            autoResumeEnabledKey: true,
+            autoResumeCooldownKey: 15.0
+        ])
         super.init()
     }
 
@@ -116,46 +127,27 @@ final class OverlayManager: NSObject {
         guard let context = contextObserver.captureCurrent() else {
             DiagnosticLog.shared.record(
                 category: "Action",
-                summary: "Resume Context unavailable",
+                summary: "Context summary unavailable",
                 detail: "No focused window context."
             )
             return
         }
 
-        let matching = records
-            .filter { !$0.isArchived && !$0.isSnoozed && context.matches($0) }
-            .sorted { $0.updatedAt > $1.updatedAt }
+        let matching = matchingRecords(for: context)
 
         guard !matching.isEmpty else {
             DiagnosticLog.shared.record(
                 category: "Action",
-                summary: "Resume Context empty",
+                summary: "Context summary empty",
                 detail: "No active breadcrumbs matched the current context."
             )
             return
         }
 
-        let contextTitle: String?
-        if let tab = context.selectedTabTitle, !tab.isEmpty {
-            contextTitle = tab
-        } else {
-            contextTitle = context.windowTitle
-        }
-
-        resumeContextController.present(
-            applicationName: context.applicationName,
-            contextTitle: contextTitle,
+        showResumeContext(
+            context: context,
             records: matching,
-            near: context.windowFrame,
-            onEdit: { [weak self] id in
-                self?.openEditor(for: id)
-            },
-            onArchive: { [weak self] id in
-                self?.archive(id)
-            },
-            onSnooze: { [weak self] id, date in
-                self?.snooze(id, until: date)
-            }
+            source: "manual"
         )
     }
 
@@ -508,8 +500,7 @@ final class OverlayManager: NSObject {
             return
         }
 
-        let matchingRecords = records
-            .filter { !$0.isArchived && !$0.isSnoozed && context.matches($0) }
+        let matchingRecords = matchingRecords(for: context)
             .sorted { $0.createdAt < $1.createdAt }
 
         let resolvedCenters = resolvedMarkerCenters(
@@ -549,6 +540,121 @@ final class OverlayManager: NSObject {
                 )
             }
         }
+
+        maybeAutoPresentResumeContext(
+            context: context,
+            matchingRecords: matchingRecords
+        )
+    }
+
+    private func matchingRecords(for context: ContextSnapshot) -> [BreadcrumbRecord] {
+        records
+            .filter { !$0.isArchived && !$0.isSnoozed && context.matches($0) }
+            .sorted { $0.updatedAt > $1.updatedAt }
+    }
+
+    private func contextKey(for context: ContextSnapshot) -> String {
+        let document = context.documentURL?
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        let title = context.windowTitle?
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        let tab = context.selectedTabTitle?
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+
+        return [
+            context.bundleIdentifier,
+            document?.isEmpty == false ? document! : (title ?? ""),
+            tab ?? ""
+        ].joined(separator: "|")
+    }
+
+    private func maybeAutoPresentResumeContext(
+        context: ContextSnapshot,
+        matchingRecords: [BreadcrumbRecord]
+    ) {
+        guard UserDefaults.standard.bool(forKey: autoResumeEnabledKey),
+              matchingRecords.count >= 2,
+              !resumeContextController.isPresented else {
+            if matchingRecords.count < 2 {
+                autoResumeCandidateKey = nil
+                autoResumeCandidateSince = nil
+            }
+            return
+        }
+
+        let key = contextKey(for: context)
+        let now = Date()
+
+        if autoResumeCandidateKey != key {
+            autoResumeCandidateKey = key
+            autoResumeCandidateSince = now
+            return
+        }
+
+        guard let candidateSince = autoResumeCandidateSince,
+              now.timeIntervalSince(candidateSince) >= 0.9 else {
+            return
+        }
+
+        let cooldownMinutes = max(
+            UserDefaults.standard.double(forKey: autoResumeCooldownKey),
+            1
+        )
+        let cooldown = cooldownMinutes * 60
+
+        if let lastShown = lastAutoResumeByContext[key],
+           now.timeIntervalSince(lastShown) < cooldown {
+            return
+        }
+
+        lastAutoResumeByContext[key] = now
+
+        DiagnosticLog.shared.record(
+            category: "Action",
+            summary: "Auto surfaced context summary",
+            detail: "context: \(key)\nbreadcrumbs: \(matchingRecords.count)"
+        )
+
+        showResumeContext(
+            context: context,
+            records: matchingRecords,
+            source: "automatic"
+        )
+    }
+
+    private func showResumeContext(
+        context: ContextSnapshot,
+        records: [BreadcrumbRecord],
+        source: String
+    ) {
+        let contextTitle: String?
+        if let tab = context.selectedTabTitle, !tab.isEmpty {
+            contextTitle = tab
+        } else {
+            contextTitle = context.windowTitle
+        }
+
+        resumeContextController.present(
+            applicationName: context.applicationName,
+            contextTitle: contextTitle,
+            records: records,
+            near: context.windowFrame,
+            onEdit: { [weak self] id in
+                self?.openEditor(for: id)
+            },
+            onArchive: { [weak self] id in
+                self?.archive(id)
+            },
+            onSnooze: { [weak self] id, date in
+                self?.snooze(id, until: date)
+            }
+        )
+
+        DiagnosticLog.shared.record(
+            category: "Action",
+            summary: "Presented context summary",
+            detail: "source: \(source)\ncount: \(records.count)"
+        )
     }
 
     private func hide(record: BreadcrumbRecord, reason: String) {
