@@ -10,13 +10,16 @@ struct HistoryView: View {
     let onDelete: (UUID) -> Void
     let onSnooze: (UUID, Date) -> Void
     let onWake: (UUID) -> Void
+    let onReopen: (UUID) -> Void
 
     private var filteredRecords: [BreadcrumbRecord] {
         var source = records
 
         switch selectedFilter {
         case "Active":
-            source = source.filter { !$0.isArchived && !$0.isSnoozed }
+            source = source.filter { !$0.isArchived && !$0.isSnoozed && !$0.isDone }
+        case "Done":
+            source = source.filter { !$0.isArchived && $0.isDone }
         case "Snoozed":
             source = source.filter { !$0.isArchived && $0.isSnoozed }
         case "Archived":
@@ -51,11 +54,11 @@ struct HistoryView: View {
     }
 
     private var activeCount: Int {
-        records.filter { !$0.isArchived && !$0.isSnoozed }.count
+        records.filter { !$0.isArchived && !$0.isSnoozed && !$0.isDone }.count
     }
 
     private var snoozedCount: Int {
-        records.filter { !$0.isArchived && $0.isSnoozed }.count
+        records.filter { !$0.isArchived && $0.isSnoozed && !$0.isDone }.count
     }
 
     private var librarySummary: String {
@@ -84,10 +87,11 @@ struct HistoryView: View {
                     Text("All").tag("All")
                     Text("Active").tag("Active")
                     Text("Snoozed").tag("Snoozed")
+                    Text("Done").tag("Done")
                     Text("Archived").tag("Archived")
                 }
                 .pickerStyle(.segmented)
-                .frame(width: 300)
+                .frame(width: 360)
             }
             .padding(.horizontal, 20)
             .padding(.vertical, 16)
@@ -114,7 +118,8 @@ struct HistoryView: View {
                                     onArchive: { onArchive(record.id) },
                                     onDelete: { onDelete(record.id) },
                                     onSnooze: { date in onSnooze(record.id, date) },
-                                    onWake: { onWake(record.id) }
+                                    onWake: { onWake(record.id) },
+                                    onReopen: { onReopen(record.id) }
                                 )
                             }
                         }
@@ -135,6 +140,7 @@ private struct BreadcrumbLibraryRow: View {
     let onDelete: () -> Void
     let onSnooze: (Date) -> Void
     let onWake: () -> Void
+    let onReopen: () -> Void
 
     @State private var isExpanded = false
     @State private var isConfirmingDelete = false
@@ -143,7 +149,7 @@ private struct BreadcrumbLibraryRow: View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(alignment: .top, spacing: 10) {
                 Group {
-                    if record.isArchived || record.isSnoozed {
+                    if record.isArchived || record.isSnoozed || record.isDone {
                         Image(systemName: statusIcon)
                             .font(.system(size: 13))
                             .foregroundStyle(.secondary)
@@ -173,7 +179,10 @@ private struct BreadcrumbLibraryRow: View {
 
                         Text("·")
 
-                        if record.isSnoozed, let snoozedUntil = record.snoozedUntil {
+                        if record.isDone, let completedAt = record.completedAt {
+                            Text("Done")
+                            Text(completedAt, style: .relative)
+                        } else if record.isSnoozed, let snoozedUntil = record.snoozedUntil {
                             Text("Snoozed")
                             Text(snoozedUntil, style: .relative)
                         } else {
@@ -189,6 +198,9 @@ private struct BreadcrumbLibraryRow: View {
                 if record.isArchived {
                     Button("Restore", action: onRestore)
                         .controlSize(.small)
+                } else if record.isDone {
+                    Button("Reopen", action: onReopen)
+                        .controlSize(.small)
                 } else if record.isSnoozed {
                     Button("Wake", action: onWake)
                         .controlSize(.small)
@@ -202,7 +214,9 @@ private struct BreadcrumbLibraryRow: View {
                     if !record.isArchived {
                         Divider()
 
-                        if record.isSnoozed {
+                        if record.isDone {
+                            Button("Reopen", systemImage: "arrow.uturn.backward", action: onReopen)
+                        } else if record.isSnoozed {
                             Button("Wake Now", systemImage: "sun.max", action: onWake)
                         } else {
                             Button("Snooze for 1 Hour", systemImage: "clock") {
@@ -269,11 +283,12 @@ private struct BreadcrumbLibraryRow: View {
             }
         }
         .padding(.vertical, 6)
-        .opacity(record.isArchived ? 0.65 : (record.isSnoozed ? 0.78 : 1))
+        .opacity(record.isArchived ? 0.65 : (record.isDone ? 0.72 : (record.isSnoozed ? 0.78 : 1)))
     }
 
     private var statusIcon: String {
         if record.isArchived { return "archivebox" }
+        if record.isDone { return "checkmark.circle.fill" }
         if record.isSnoozed { return "clock" }
         return "circle.dotted"
     }
