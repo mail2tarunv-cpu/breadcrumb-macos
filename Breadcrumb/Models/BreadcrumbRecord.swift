@@ -96,9 +96,12 @@ struct BreadcrumbRecord: Codable, Identifiable, Equatable {
             return CGPoint(x: fallbackScreenX, y: fallbackScreenY)
         }
 
+        let safeX = relativeX.isFinite ? min(max(relativeX, 0), 1) : 0.5
+        let safeY = relativeY.isFinite ? min(max(relativeY, 0), 1) : 0.5
+
         return CGPoint(
-            x: frame.minX + frame.width * relativeX,
-            y: frame.minY + frame.height * relativeY
+            x: frame.minX + frame.width * safeX,
+            y: frame.minY + frame.height * safeY
         )
     }
 }
