@@ -112,10 +112,18 @@ private struct BreadcrumbLibraryRow: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(alignment: .top, spacing: 10) {
-                Image(systemName: statusIcon)
-                    .font(.system(size: 13))
-                    .foregroundStyle(.secondary)
-                    .frame(width: 18, height: 18)
+                Group {
+                    if record.isArchived || record.isSnoozed {
+                        Image(systemName: statusIcon)
+                            .font(.system(size: 13))
+                            .foregroundStyle(.secondary)
+                    } else {
+                        Circle()
+                            .fill(record.breadcrumbColor.color)
+                            .frame(width: 9, height: 9)
+                    }
+                }
+                .frame(width: 18, height: 18)
 
                 VStack(alignment: .leading, spacing: 4) {
                     Text(record.text)
