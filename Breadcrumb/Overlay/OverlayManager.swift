@@ -93,6 +93,7 @@ final class OverlayManager: NSObject {
     private var refreshTimer: Timer?
     private var lastDecisionByRecord: [UUID: String] = [:]
     private var editingRecordID: UUID?
+    private var lastStableTargetContext: ContextSnapshot?
 
     private var autoResumeCandidateKey: String?
     private var autoResumeCandidateSince: Date?
@@ -382,15 +383,14 @@ final class OverlayManager: NSObject {
         panels[record.id] = panel
     }
 
-    private func hideAllPanelsForEditing() {
-        for panel in panels.values {
-            panel.orderOut(nil)
-        }
+    private func hideEditingPanel() {
+        guard let editingRecordID else { return }
+        panels[editingRecordID]?.orderOut(nil)
     }
 
     private func finishEditing() {
         editingRecordID = nil
-        refresh()
+        refresh(preferredContext: lastStableTargetContext)
     }
 
     private func openEditor(for id: UUID) {
@@ -415,7 +415,11 @@ final class OverlayManager: NSObject {
         )
 
         editingRecordID = id
-        hideAllPanelsForEditing()
+        if let current = contextObserver.captureCurrent(),
+           current.bundleIdentifier != "com.tarun.breadcrumb" {
+            lastStableTargetContext = current
+        }
+        hideEditingPanel()
 
         editorController.present(
             record: record,
@@ -479,12 +483,27 @@ final class OverlayManager: NSObject {
     }
 
     private func refresh(preferredContext: ContextSnapshot? = nil) {
+        let captured = preferredContext ?? contextObserver.captureCurrent()
+        let context: ContextSnapshot?
+
         if editingRecordID != nil {
-            hideAllPanelsForEditing()
-            return
+            if let captured,
+               captured.bundleIdentifier != "com.tarun.breadcrumb" {
+                lastStableTargetContext = captured
+                context = captured
+            } else {
+                context = lastStableTargetContext
+            }
+            hideEditingPanel()
+        } else {
+            context = captured
+            if let captured,
+               captured.bundleIdentifier != "com.tarun.breadcrumb" {
+                lastStableTargetContext = captured
+            }
         }
 
-        guard let context = preferredContext ?? contextObserver.captureCurrent() else {
+        guard let context else {
             for record in records where !record.isArchived {
                 hide(record: record, reason: "No focused window context")
             }
@@ -510,6 +529,11 @@ final class OverlayManager: NSObject {
 
         for record in records where !record.isArchived {
             guard let panel = panels[record.id] else { continue }
+
+            if record.id == editingRecordID {
+                panel.orderOut(nil)
+                continue
+            }
 
             if record.isSnoozed {
                 panel.orderOut(nil)
@@ -541,10 +565,12 @@ final class OverlayManager: NSObject {
             }
         }
 
-        maybeAutoPresentResumeContext(
-            context: context,
-            matchingRecords: matchingRecords
-        )
+        if editingRecordID == nil {
+            maybeAutoPresentResumeContext(
+                context: context,
+                matchingRecords: matchingRecords
+            )
+        }
     }
 
     private func matchingRecords(for context: ContextSnapshot) -> [BreadcrumbRecord] {
