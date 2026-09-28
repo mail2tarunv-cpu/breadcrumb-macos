@@ -91,6 +91,7 @@ final class OverlayManager: NSObject {
     private var workspaceObserver: NSObjectProtocol?
     private var refreshTimer: Timer?
     private var lastDecisionByRecord: [UUID: String] = [:]
+    private var editingRecordID: UUID?
 
     init(contextObserver: ContextObserver, store: BreadcrumbStore) {
         self.contextObserver = contextObserver
@@ -191,6 +192,9 @@ final class OverlayManager: NSObject {
         persist()
 
         panels[id]?.orderOut(nil)
+        if editingRecordID == id {
+            editingRecordID = nil
+        }
         editorController.dismiss()
 
         DiagnosticLog.shared.record(
@@ -207,6 +211,9 @@ final class OverlayManager: NSObject {
         panels.removeValue(forKey: id)
         records.remove(at: index)
         persist()
+        if editingRecordID == id {
+            editingRecordID = nil
+        }
         editorController.dismiss()
 
         DiagnosticLog.shared.record(
@@ -305,6 +312,17 @@ final class OverlayManager: NSObject {
         panels[record.id] = panel
     }
 
+    private func hideAllPanelsForEditing() {
+        for panel in panels.values {
+            panel.orderOut(nil)
+        }
+    }
+
+    private func finishEditing() {
+        editingRecordID = nil
+        refresh()
+    }
+
     private func openEditor(for id: UUID) {
         guard let record = records.first(where: { $0.id == id }),
               let panel = panels[id] else {
@@ -326,6 +344,9 @@ final class OverlayManager: NSObject {
             y: panel.frame.midY
         )
 
+        editingRecordID = id
+        hideAllPanelsForEditing()
+
         editorController.present(
             record: record,
             near: anchorPoint,
@@ -337,6 +358,9 @@ final class OverlayManager: NSObject {
             },
             onDelete: { [weak self] in
                 self?.delete(id)
+            },
+            onDismiss: { [weak self] in
+                self?.finishEditing()
             }
         )
     }
@@ -382,6 +406,11 @@ final class OverlayManager: NSObject {
     }
 
     private func refresh(preferredContext: ContextSnapshot? = nil) {
+        if editingRecordID != nil {
+            hideAllPanelsForEditing()
+            return
+        }
+
         guard let context = preferredContext ?? contextObserver.captureCurrent() else {
             for record in records where !record.isArchived {
                 hide(record: record, reason: "No focused window context")
