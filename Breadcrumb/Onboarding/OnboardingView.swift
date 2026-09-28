@@ -6,89 +6,82 @@ struct OnboardingView: View {
     let onFinish: () -> Void
 
     var body: some View {
-        VStack(spacing: 0) {
-            Spacer(minLength: 34)
+        VStack(spacing: 24) {
+            Spacer(minLength: 24)
 
-            ZStack {
-                Circle()
-                    .fill(.primary.opacity(0.045))
-                    .frame(width: 92, height: 92)
+            Image(systemName: "circle.dotted")
+                .font(.system(size: 34, weight: .medium))
+                .foregroundStyle(.primary)
 
-                Circle()
-                    .fill(.primary.opacity(0.08))
-                    .frame(width: 58, height: 58)
-
-                Image(systemName: "circle.dotted")
-                    .font(.system(size: 28, weight: .medium))
-            }
-
-            VStack(spacing: 9) {
+            VStack(spacing: 7) {
                 Text("Leave thoughts where they happen.")
-                    .font(.system(size: 28, weight: .semibold))
-                    .tracking(-0.4)
+                    .font(.system(size: 25, weight: .semibold))
 
-                Text("Breadcrumb remembers the window, tab, and place where a thought happened — then brings it back when you return.")
-                    .font(.system(size: 13.5))
+                Text("Press ⌥ Space from any app. Breadcrumb remembers the window or tab and brings your thought back when you return.")
+                    .font(.system(size: 13))
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
-                    .lineSpacing(3)
-                    .frame(maxWidth: 420)
+                    .lineSpacing(2)
+                    .frame(maxWidth: 390)
             }
-            .padding(.top, 22)
 
-            HStack(spacing: 22) {
-                feature("keyboard", "Capture", "Press ⌥ Space")
-                feature("location", "Leave", "Keep working")
-                feature("arrow.uturn.backward", "Return", "Pick up instantly")
+            HStack(spacing: 28) {
+                step("1", "Capture", "⌥ Space")
+                step("2", "Leave", "Keep working")
+                step("3", "Return", "Pick up again")
             }
-            .padding(.top, 30)
 
-            Spacer()
+            Divider()
+                .frame(maxWidth: 410)
 
-            VStack(spacing: 10) {
-                if hasAccessibilityAccess {
-                    Label("Window awareness is ready", systemImage: "checkmark.circle.fill")
-                        .font(.system(size: 12, weight: .medium))
+            if hasAccessibilityAccess {
+                VStack(spacing: 12) {
+                    Label("Window awareness is enabled", systemImage: "checkmark.circle.fill")
+                        .font(.system(size: 12))
                         .foregroundStyle(.secondary)
 
                     Button("Start Using Breadcrumb", action: onFinish)
                         .buttonStyle(.borderedProminent)
                         .controlSize(.large)
                         .keyboardShortcut(.defaultAction)
-                } else {
+                }
+            } else {
+                VStack(spacing: 10) {
                     Text("Breadcrumb needs Accessibility permission to know which window a thought belongs to.")
                         .font(.system(size: 11.5))
                         .foregroundStyle(.secondary)
                         .multilineTextAlignment(.center)
+                        .frame(maxWidth: 360)
 
-                    Button("Enable Window Awareness", action: onEnableAccessibility)
+                    Button("Enable Window Awareness…", action: onEnableAccessibility)
                         .buttonStyle(.borderedProminent)
                         .controlSize(.large)
                 }
             }
 
-            Spacer(minLength: 28)
+            Spacer(minLength: 20)
         }
         .padding(.horizontal, 34)
-        .frame(width: 560, height: 520)
-        .background(.ultraThinMaterial)
+        .frame(width: 520, height: 430)
+        .background(Color(nsColor: .windowBackgroundColor))
     }
 
-    private func feature(_ icon: String, _ title: String, _ subtitle: String) -> some View {
-        VStack(spacing: 7) {
-            Image(systemName: icon)
-                .font(.system(size: 16, weight: .medium))
-                .frame(width: 32, height: 32)
-                .background(.primary.opacity(0.055))
-                .clipShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
+    private func step(_ number: String, _ title: String, _ detail: String) -> some View {
+        VStack(spacing: 5) {
+            Text(number)
+                .font(.system(size: 10, weight: .semibold))
+                .foregroundStyle(.secondary)
+                .frame(width: 24, height: 24)
+                .background(.quaternary)
+                .clipShape(Circle())
 
             Text(title)
                 .font(.system(size: 11.5, weight: .semibold))
 
-            Text(subtitle)
+            Text(detail)
                 .font(.system(size: 10))
                 .foregroundStyle(.tertiary)
         }
-        .frame(width: 110)
+        .frame(width: 100)
     }
 }
