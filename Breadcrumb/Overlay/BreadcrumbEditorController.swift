@@ -13,6 +13,7 @@ final class BreadcrumbEditorController {
         record: BreadcrumbRecord,
         near anchorPoint: CGPoint,
         onSave: @escaping (String) -> Void,
+        onColorChange: @escaping (BreadcrumbColor) -> Void,
         onArchive: @escaping () -> Void,
         onDelete: @escaping () -> Void,
         onSnooze: @escaping (Date) -> Void,
@@ -48,6 +49,8 @@ final class BreadcrumbEditorController {
             applicationName: record.applicationName,
             windowTitle: record.windowTitle,
             createdAt: record.createdAt,
+            breadcrumbColor: record.breadcrumbColor,
+            onColorChange: onColorChange,
             onSave: { [weak self] text in
                 onSave(text)
                 self?.dismiss()
