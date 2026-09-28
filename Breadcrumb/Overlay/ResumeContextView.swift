@@ -49,7 +49,7 @@ struct ResumeContextView: View {
                 ForEach(records.prefix(5)) { record in
                     HStack(alignment: .top, spacing: 10) {
                         Circle()
-                            .fill(.secondary.opacity(0.45))
+                            .fill(record.breadcrumbColor.color)
                             .frame(width: 6, height: 6)
                             .padding(.top, 6)
 
