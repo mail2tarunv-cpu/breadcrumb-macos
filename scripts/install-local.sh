@@ -12,7 +12,13 @@ cd "$ROOT_DIR"
 
 echo "→ Looking for a valid macOS code-signing identity"
 
-IDENTITIES="$(security find-identity -v -p codesigning 2>/dev/null || true)"
+LOGIN_KEYCHAIN="$HOME/Library/Keychains/login.keychain-db"
+
+IDENTITIES="$(
+  security find-identity -v -p codesigning "$LOGIN_KEYCHAIN" 2>/dev/null \
+    || security find-identity -v -p codesigning 2>/dev/null \
+    || true
+)"
 IDENTITY_LINE="$(echo "$IDENTITIES" | grep -E '[0-9A-F]{40}' | head -n 1 || true)"
 
 if [[ -z "$IDENTITY_LINE" ]]; then
@@ -23,19 +29,23 @@ if [[ -z "$IDENTITY_LINE" ]]; then
   echo "Detected identities:"
   echo "$IDENTITIES"
   echo
-  echo "This usually means the certificate exists in Xcode/Apple's account,"
-  echo "but its PRIVATE KEY is missing from the login Keychain."
+  echo "The login Keychain was checked explicitly:"
+  echo "  $LOGIN_KEYCHAIN"
   echo
-  echo "Open Keychain Access → login → My Certificates."
-  echo "Find your Apple Development certificate and expand it."
-  echo "You must see a private key directly underneath it."
+  echo "Certificates visible in the login Keychain:"
+  security find-certificate -a "$LOGIN_KEYCHAIN" 2>/dev/null \
+    | grep -E 'alis|labl|subj' \
+    | head -n 40 \
+    || true
   echo
-  echo "If there is no private key:"
-  echo "  1. Xcode → Settings → Accounts → Manage Certificates…"
-  echo "  2. Remove the unusable development certificate for this Mac"
-  echo "  3. Click + → Apple Development to create a fresh one on this Mac"
-  echo "  4. Quit/reopen Xcode"
-  echo "  5. Run this installer again"
+  echo "Since you confirmed the private key exists, the remaining likely causes are:"
+  echo "  • the certificate is not currently trusted/valid for code signing"
+  echo "  • the login Keychain is locked or excluded from the active search list"
+  echo "  • the certificate/private-key ACL is preventing codesign access"
+  echo
+  echo "Run these two commands and send me the output:"
+  echo "  security list-keychains -d user"
+  echo "  security find-identity -v -p codesigning ~/Library/Keychains/login.keychain-db"
   exit 2
 fi
 
