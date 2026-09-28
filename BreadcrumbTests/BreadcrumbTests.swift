@@ -446,4 +446,33 @@ final class BreadcrumbTests: XCTestCase {
         XCTAssertEqual(fallbackPoint.x, frame.midX, accuracy: 0.0001)
         XCTAssertEqual(fallbackPoint.y, frame.midY, accuracy: 0.0001)
     }
+    func testBreadcrumbColorPersistsAndLegacyDefaultsToLavender() throws {
+        let suiteName = "BreadcrumbTests.Color.\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suiteName)!
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+
+        let store = BreadcrumbStore(defaults: defaults)
+        let context = ContextSnapshot(
+            bundleIdentifier: "com.test.app",
+            applicationName: "Test",
+            windowTitle: "Document",
+            windowFrame: CGRect(x: 0, y: 0, width: 800, height: 600)
+        )
+
+        var record = BreadcrumbRecord(
+            text: "Color me",
+            context: context,
+            anchorPoint: CGPoint(x: 300, y: 300)
+        )
+        record.breadcrumbColor = .mint
+
+        store.save([record])
+        let loaded = try XCTUnwrap(store.load().first)
+
+        XCTAssertEqual(loaded.breadcrumbColor, .mint)
+
+        var legacy = loaded
+        legacy.colorName = nil
+        XCTAssertEqual(legacy.breadcrumbColor, .lavender)
+    }
 }
