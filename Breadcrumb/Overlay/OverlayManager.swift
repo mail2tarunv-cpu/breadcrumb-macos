@@ -1,6 +1,12 @@
 import AppKit
 import SwiftUI
 
+private final class MarkerHostingView<Content: View>: NSHostingView<Content> {
+    override func acceptsFirstMouse(for event: NSEvent?) -> Bool {
+        true
+    }
+}
+
 final class OverlayManager: NSObject, NSWindowDelegate {
     private let contextObserver: ContextObserver
     private let store: BreadcrumbStore
@@ -45,7 +51,7 @@ final class OverlayManager: NSObject, NSWindowDelegate {
         }
 
         refreshTimer = Timer.scheduledTimer(
-            withTimeInterval: 0.18,
+            withTimeInterval: 0.12,
             repeats: true
         ) { [weak self] _ in
             self?.refresh()
@@ -121,7 +127,7 @@ final class OverlayManager: NSObject, NSWindowDelegate {
     private func createPanelIfNeeded(for record: BreadcrumbRecord) {
         guard panels[record.id] == nil, !record.isArchived else { return }
 
-        let size = NSSize(width: 20, height: 20)
+        let size = NSSize(width: 24, height: 24)
         let fallbackPoint = record.anchorPoint(in: nil)
 
         let panel = NSPanel(
@@ -143,17 +149,18 @@ final class OverlayManager: NSObject, NSWindowDelegate {
         panel.collectionBehavior = [.moveToActiveSpace, .fullScreenAuxiliary]
         panel.isMovableByWindowBackground = true
         panel.hidesOnDeactivate = false
+        panel.ignoresMouseEvents = false
         panel.delegate = self
 
-        panel.contentView = NSHostingView(
-            rootView: BreadcrumbMarkerView(
-                text: record.text,
-                applicationName: record.applicationName,
-                onOpen: { [weak self] in
-                    self?.openEditor(for: record.id)
-                }
-            )
+        let rootView = BreadcrumbMarkerView(
+            text: record.text,
+            applicationName: record.applicationName,
+            onOpen: { [weak self] in
+                self?.openEditor(for: record.id)
+            }
         )
+
+        panel.contentView = MarkerHostingView(rootView: rootView)
 
         panels[record.id] = panel
         panelToRecord[ObjectIdentifier(panel)] = record.id
@@ -183,21 +190,36 @@ final class OverlayManager: NSObject, NSWindowDelegate {
     }
 
     private func refresh(preferredContext: ContextSnapshot? = nil) {
-        guard let context = preferredContext ?? contextObserver.captureCurrent() else {
+        guard let activeBundle = NSWorkspace.shared.frontmostApplication?.bundleIdentifier else {
             hideAll()
             return
+        }
+
+        let context: ContextSnapshot?
+        if let preferredContext, preferredContext.bundleIdentifier == activeBundle {
+            context = preferredContext
+        } else {
+            context = contextObserver.captureCurrent()
         }
 
         for index in records.indices where !records[index].isArchived {
             let record = records[index]
             guard let panel = panels[record.id] else { continue }
 
-            guard context.matches(record) else {
+            // Bundle identity is the hard boundary. This prevents a breadcrumb
+            // from following the user onto Finder/Desktop or another app even
+            // if Accessibility briefly reports stale window metadata.
+            guard record.bundleIdentifier == activeBundle else {
                 panel.orderOut(nil)
                 continue
             }
 
-            let point = record.anchorPoint(in: context.windowFrame)
+            if let context, !context.matches(record) {
+                panel.orderOut(nil)
+                continue
+            }
+
+            let point = record.anchorPoint(in: context?.windowFrame)
             reposition(panel, recordID: record.id, center: point)
             panel.orderFrontRegardless()
         }
@@ -225,6 +247,7 @@ final class OverlayManager: NSObject, NSWindowDelegate {
 
     private func hideAll() {
         panels.values.forEach { $0.orderOut(nil) }
+        editorController.dismiss()
     }
 
     func windowDidMove(_ notification: Notification) {
