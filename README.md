@@ -23,7 +23,7 @@ Breadcrumb currently includes:
 - First-run Accessibility onboarding
 - Native Settings surface
 - Light/Dark Mode through system materials
-- App Sandbox enabled
+- Local development build currently runs without App Sandbox because cross-app Accessibility behavior is still being validated
 - Automated macOS build and model/persistence tests
 
 ## Build locally
