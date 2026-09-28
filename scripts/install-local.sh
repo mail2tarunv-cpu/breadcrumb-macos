@@ -34,9 +34,6 @@ echo "→ Replacing installed development copy"
 rm -rf "$INSTALL_PATH"
 ditto "$APP_PATH" "$INSTALL_PATH"
 
-echo "→ Resetting stale Accessibility permission for the development build"
-tccutil reset Accessibility "$BUNDLE_ID" >/dev/null 2>&1 || true
-
 echo "→ Launching $INSTALL_PATH"
 open "$INSTALL_PATH"
 
