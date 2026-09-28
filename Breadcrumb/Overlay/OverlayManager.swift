@@ -707,7 +707,12 @@ final class OverlayManager: NSObject {
     private func matchingRecords(for context: ContextSnapshot) -> [BreadcrumbRecord] {
         records
             .filter { !$0.isArchived && !$0.isDone && !$0.isSnoozed && context.matches($0) }
-            .sorted { $0.updatedAt > $1.updatedAt }
+            .sorted {
+                if $0.createdAt != $1.createdAt {
+                    return $0.createdAt < $1.createdAt
+                }
+                return $0.updatedAt < $1.updatedAt
+            }
     }
 
     private func contextKey(for context: ContextSnapshot) -> String {
@@ -828,6 +833,9 @@ final class OverlayManager: NSObject {
             },
             onArchive: { [weak self] id in
                 self?.archive(id)
+            },
+            onDone: { [weak self] id in
+                self?.markDone(id)
             },
             onSnooze: { [weak self] id, date in
                 self?.snooze(id, until: date)
