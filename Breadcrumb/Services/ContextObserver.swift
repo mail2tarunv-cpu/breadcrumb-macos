@@ -2,21 +2,20 @@ import AppKit
 import ApplicationServices
 
 final class ContextObserver {
+    private var lastFingerprint: String?
+
     func captureCurrent() -> ContextSnapshot? {
         guard let app = NSWorkspace.shared.frontmostApplication,
               let bundleIdentifier = app.bundleIdentifier else {
+            logFailure("No frontmost application")
             return nil
         }
 
         let appName = app.localizedName ?? bundleIdentifier
 
         guard AXIsProcessTrusted() else {
-            return ContextSnapshot(
-                bundleIdentifier: bundleIdentifier,
-                applicationName: appName,
-                windowTitle: nil,
-                windowFrame: nil
-            )
+            logFailure("Accessibility permission missing", appName: appName, bundleID: bundleIdentifier)
+            return nil
         }
 
         let appElement = AXUIElementCreateApplication(app.processIdentifier)
@@ -25,25 +24,87 @@ final class ContextObserver {
             appElement,
             kAXFocusedWindowAttribute as CFString
         ) else {
-            return ContextSnapshot(
-                bundleIdentifier: bundleIdentifier,
-                applicationName: appName,
-                windowTitle: nil,
-                windowFrame: nil
-            )
+            logFailure("No focused window", appName: appName, bundleID: bundleIdentifier)
+            return nil
         }
 
-        let title = copyStringAttribute(
+        guard let title = copyStringAttribute(
             window,
             kAXTitleAttribute as CFString
-        )
-        let frame = copyWindowFrame(window)
+        )?.trimmingCharacters(in: .whitespacesAndNewlines),
+        !title.isEmpty else {
+            logFailure("Focused window has no title", appName: appName, bundleID: bundleIdentifier)
+            return nil
+        }
 
-        return ContextSnapshot(
+        guard let frame = copyWindowFrame(window),
+              frame.width > 0,
+              frame.height > 0 else {
+            logFailure("Focused window has no usable frame", appName: appName, bundleID: bundleIdentifier)
+            return nil
+        }
+
+        let windowNumber = findWindowNumber(
+            processIdentifier: app.processIdentifier,
+            title: title,
+            frame: frame
+        )
+
+        let snapshot = ContextSnapshot(
             bundleIdentifier: bundleIdentifier,
             applicationName: appName,
             windowTitle: title,
-            windowFrame: frame
+            windowFrame: frame,
+            processIdentifier: app.processIdentifier,
+            windowNumber: windowNumber
+        )
+
+        logSnapshotIfChanged(snapshot)
+        return snapshot
+    }
+
+    private func logSnapshotIfChanged(_ snapshot: ContextSnapshot) {
+        let fingerprint = [
+            snapshot.bundleIdentifier,
+            snapshot.windowTitle ?? "",
+            String(snapshot.processIdentifier ?? -1),
+            String(snapshot.windowNumber ?? -1),
+            NSStringFromRect(snapshot.windowFrame ?? .zero)
+        ].joined(separator: "|")
+
+        guard fingerprint != lastFingerprint else { return }
+        lastFingerprint = fingerprint
+
+        DiagnosticLog.shared.record(
+            category: "Context",
+            summary: "Detected \(snapshot.applicationName)",
+            detail: [
+                "bundle: \(snapshot.bundleIdentifier)",
+                "pid: \(snapshot.processIdentifier.map(String.init) ?? "nil")",
+                "windowNumber: \(snapshot.windowNumber.map(String.init) ?? "nil")",
+                "title: \(snapshot.windowTitle ?? "nil")",
+                "frame: \(NSStringFromRect(snapshot.windowFrame ?? .zero))",
+                "stable: \(snapshot.hasStableIdentity)"
+            ].joined(separator: "\n")
+        )
+    }
+
+    private func logFailure(
+        _ reason: String,
+        appName: String? = nil,
+        bundleID: String? = nil
+    ) {
+        let fingerprint = "failure|\(reason)|\(bundleID ?? "")"
+        guard fingerprint != lastFingerprint else { return }
+        lastFingerprint = fingerprint
+
+        DiagnosticLog.shared.record(
+            category: "Context",
+            summary: reason,
+            detail: [
+                "app: \(appName ?? "unknown")",
+                "bundle: \(bundleID ?? "unknown")"
+            ].joined(separator: "\n")
         )
     }
 
@@ -121,5 +182,58 @@ final class ContextObserver {
             width: size.width,
             height: size.height
         )
+    }
+
+    private func findWindowNumber(
+        processIdentifier: pid_t,
+        title: String,
+        frame: CGRect
+    ) -> Int? {
+        guard let info = CGWindowListCopyWindowInfo(
+            [.optionOnScreenOnly, .excludeDesktopElements],
+            kCGNullWindowID
+        ) as? [[String: Any]] else {
+            return nil
+        }
+
+        let primaryTop = NSScreen.screens.first?.frame.maxY ?? 0
+
+        let candidates = info.compactMap { item -> (Int, String?, CGRect)? in
+            guard let ownerPID = item[kCGWindowOwnerPID as String] as? Int,
+                  ownerPID == Int(processIdentifier),
+                  let number = item[kCGWindowNumber as String] as? Int,
+                  let boundsDict = item[kCGWindowBounds as String] as? CFDictionary,
+                  let cgFrame = CGRect(dictionaryRepresentation: boundsDict) else {
+                return nil
+            }
+
+            let cocoaFrame = CGRect(
+                x: cgFrame.origin.x,
+                y: primaryTop - cgFrame.origin.y - cgFrame.height,
+                width: cgFrame.width,
+                height: cgFrame.height
+            )
+
+            let name = item[kCGWindowName as String] as? String
+            return (number, name, cocoaFrame)
+        }
+
+        let titleMatch = candidates.first {
+            ($0.1 ?? "").trimmingCharacters(in: .whitespacesAndNewlines) == title
+            && approximatelyEqual($0.2, frame)
+        }
+
+        if let titleMatch {
+            return titleMatch.0
+        }
+
+        return candidates.first(where: { approximatelyEqual($0.2, frame) })?.0
+    }
+
+    private func approximatelyEqual(_ lhs: CGRect, _ rhs: CGRect) -> Bool {
+        abs(lhs.minX - rhs.minX) < 4
+        && abs(lhs.minY - rhs.minY) < 4
+        && abs(lhs.width - rhs.width) < 4
+        && abs(lhs.height - rhs.height) < 4
     }
 }
