@@ -18,14 +18,24 @@ IDENTITY_LINE="$(echo "$IDENTITIES" | grep -E '[0-9A-F]{40}' | head -n 1 || true
 if [[ -z "$IDENTITY_LINE" ]]; then
   echo
   echo "Xcode shows a development certificate, but macOS Keychain is not exposing"
-  echo "a usable code-signing identity to the command line yet."
+  echo "a usable code-signing identity with its private key."
   echo
   echo "Detected identities:"
   echo "$IDENTITIES"
   echo
-  echo "In Xcode → Settings → Accounts → Manage Certificates…, make sure the"
-  echo "Apple Development certificate has no warning/error status. Then quit and"
-  echo "reopen Xcode and run this installer again."
+  echo "This usually means the certificate exists in Xcode/Apple's account,"
+  echo "but its PRIVATE KEY is missing from the login Keychain."
+  echo
+  echo "Open Keychain Access → login → My Certificates."
+  echo "Find your Apple Development certificate and expand it."
+  echo "You must see a private key directly underneath it."
+  echo
+  echo "If there is no private key:"
+  echo "  1. Xcode → Settings → Accounts → Manage Certificates…"
+  echo "  2. Remove the unusable development certificate for this Mac"
+  echo "  3. Click + → Apple Development to create a fresh one on this Mac"
+  echo "  4. Quit/reopen Xcode"
+  echo "  5. Run this installer again"
   exit 2
 fi
 
