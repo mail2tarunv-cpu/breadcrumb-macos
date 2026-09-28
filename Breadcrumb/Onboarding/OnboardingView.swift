@@ -1,6 +1,8 @@
 import SwiftUI
 
 struct OnboardingView: View {
+    @AppStorage("breadcrumb.capture.shortcut") private var captureShortcutRaw = CaptureShortcut.optionSpace.rawValue
+
     let hasAccessibilityAccess: Bool
     let onEnableAccessibility: () -> Void
     let onFinish: () -> Void
@@ -17,7 +19,7 @@ struct OnboardingView: View {
                 Text("Leave thoughts where they happen.")
                     .font(.system(size: 25, weight: .semibold))
 
-                Text("Press ⌥ Space from any app. Breadcrumb remembers the window or tab and brings your thought back when you return.")
+                Text("Press \((CaptureShortcut(rawValue: captureShortcutRaw) ?? .optionSpace).title) from any app. Breadcrumb remembers the window or tab and brings your thought back when you return.")
                     .font(.system(size: 13))
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
@@ -26,7 +28,7 @@ struct OnboardingView: View {
             }
 
             HStack(spacing: 28) {
-                step("1", "Capture", "⌥ Space")
+                step("1", "Capture", (CaptureShortcut(rawValue: captureShortcutRaw) ?? .optionSpace).title)
                 step("2", "Leave", "Keep working")
                 step("3", "Return", "Pick up again")
             }
