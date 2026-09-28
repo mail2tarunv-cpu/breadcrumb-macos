@@ -17,7 +17,7 @@ struct ResumeContextView: View {
                     .foregroundStyle(.secondary)
 
                 VStack(alignment: .leading, spacing: 1) {
-                    Text("You left off here")
+                    Text("Pick up where you left off")
                         .font(.system(size: 13.5, weight: .semibold))
 
                     HStack(spacing: 4) {
