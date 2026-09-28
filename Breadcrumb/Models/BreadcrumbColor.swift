@@ -26,19 +26,19 @@ enum BreadcrumbColor: String, Codable, CaseIterable, Identifiable {
     var color: Color {
         switch self {
         case .butter:
-            return Color(red: 0.96, green: 0.86, blue: 0.55)
+            return Color(red: 0.96, green: 0.90, blue: 0.72)
         case .peach:
-            return Color(red: 0.96, green: 0.72, blue: 0.58)
+            return Color(red: 0.96, green: 0.82, blue: 0.73)
         case .blush:
-            return Color(red: 0.94, green: 0.68, blue: 0.73)
+            return Color(red: 0.94, green: 0.80, blue: 0.83)
         case .lavender:
-            return Color(red: 0.77, green: 0.70, blue: 0.93)
+            return Color(red: 0.84, green: 0.80, blue: 0.94)
         case .sky:
-            return Color(red: 0.66, green: 0.81, blue: 0.94)
+            return Color(red: 0.79, green: 0.87, blue: 0.95)
         case .mint:
-            return Color(red: 0.62, green: 0.88, blue: 0.78)
+            return Color(red: 0.78, green: 0.91, blue: 0.85)
         case .sage:
-            return Color(red: 0.72, green: 0.82, blue: 0.67)
+            return Color(red: 0.82, green: 0.88, blue: 0.77)
         }
     }
 }
