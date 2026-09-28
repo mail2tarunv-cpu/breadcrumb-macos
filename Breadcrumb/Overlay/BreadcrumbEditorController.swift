@@ -15,6 +15,7 @@ final class BreadcrumbEditorController {
         onSave: @escaping (String) -> Void,
         onArchive: @escaping () -> Void,
         onDelete: @escaping () -> Void,
+        onSnooze: @escaping (Date) -> Void,
         onDismiss: @escaping () -> Void
     ) {
         dismiss()
@@ -57,6 +58,10 @@ final class BreadcrumbEditorController {
             },
             onDelete: { [weak self] in
                 onDelete()
+                self?.dismiss()
+            },
+            onSnooze: { [weak self] date in
+                onSnooze(date)
                 self?.dismiss()
             },
             onClose: { [weak self] in
