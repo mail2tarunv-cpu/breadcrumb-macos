@@ -12,11 +12,12 @@ final class BreadcrumbEditorController {
         record: BreadcrumbRecord,
         near anchorPoint: CGPoint,
         onSave: @escaping (String) -> Void,
-        onArchive: @escaping () -> Void
+        onArchive: @escaping () -> Void,
+        onDelete: @escaping () -> Void
     ) {
         dismiss()
 
-        let size = NSSize(width: 320, height: 190)
+        let size = NSSize(width: 360, height: 270)
         let preferred = NSPoint(
             x: anchorPoint.x + 12,
             y: anchorPoint.y - size.height / 2
@@ -50,6 +51,10 @@ final class BreadcrumbEditorController {
             },
             onArchive: { [weak self] in
                 onArchive()
+                self?.dismiss()
+            },
+            onDelete: { [weak self] in
+                onDelete()
                 self?.dismiss()
             },
             onClose: { [weak self] in
