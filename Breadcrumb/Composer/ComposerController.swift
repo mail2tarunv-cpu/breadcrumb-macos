@@ -21,17 +21,35 @@ final class ComposerController {
     }
 
     static func presentFromGlobalShortcut() {
+        DiagnosticLog.shared.record(
+            category: "Hotkey",
+            summary: "⌥ Space received",
+            detail: "Opening composer."
+        )
         shared?.present()
     }
 
     func present() {
         dismiss()
 
-        // Capture context before Breadcrumb presents any UI.
-        guard let context = contextProvider() else { return }
+        // Context capture is intentionally optional here. The composer must
+        // always appear so a failed context lookup can never masquerade as a
+        // broken keyboard shortcut.
+        let context = contextProvider()
+
+        if context == nil {
+            DiagnosticLog.shared.record(
+                category: "Capture",
+                summary: "Composer opened without precise context",
+                detail: "The hotkey worked, but ContextObserver returned nil."
+            )
+        }
 
         let pointer = NSEvent.mouseLocation
-        let size = NSSize(width: 340, height: 46)
+        let width: CGFloat = 380
+        let height: CGFloat = context == nil ? 76 : 58
+        let size = NSSize(width: width, height: height)
+
         let origin = constrainedOrigin(
             preferred: NSPoint(
                 x: pointer.x + 12,
@@ -55,9 +73,24 @@ final class ComposerController {
         panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
         panel.hidesOnDeactivate = false
 
+        let contextLabel: String?
+        if let context {
+            if let tab = context.selectedTabTitle, !tab.isEmpty {
+                contextLabel = context.applicationName + " · " + tab
+            } else if let title = context.windowTitle, !title.isEmpty {
+                contextLabel = context.applicationName + " · " + title
+            } else {
+                contextLabel = context.applicationName
+            }
+        } else {
+            contextLabel = nil
+        }
+
         let view = ComposerView(
+            contextAvailable: context != nil,
+            contextLabel: contextLabel,
             onSubmit: { [weak self] text in
-                guard let self else { return }
+                guard let self, let context else { return }
                 self.onCreate(text, pointer, context)
                 self.dismiss()
             },
@@ -67,8 +100,6 @@ final class ComposerController {
         )
 
         panel.contentView = NSHostingView(rootView: view)
-
-        // A non-activating panel keeps the originating app as the real context.
         panel.orderFrontRegardless()
         panel.makeKey()
 
