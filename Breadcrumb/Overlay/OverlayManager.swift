@@ -223,10 +223,40 @@ final class OverlayManager: NSObject {
         )
     }
 
+    func snooze(_ id: UUID, until date: Date) {
+        guard let index = records.firstIndex(where: { $0.id == id }) else { return }
+
+        records[index].snoozedUntil = date
+        records[index].updatedAt = Date()
+        persist()
+
+        panels[id]?.orderOut(nil)
+        if editingRecordID == id {
+            editingRecordID = nil
+        }
+        editorController.dismiss()
+
+        DiagnosticLog.shared.record(
+            category: "Action",
+            summary: "Snoozed breadcrumb",
+            detail: "id: \(id.uuidString)\nuntil: \(date)"
+        )
+    }
+
+    func wake(_ id: UUID) {
+        guard let index = records.firstIndex(where: { $0.id == id }) else { return }
+
+        records[index].snoozedUntil = nil
+        records[index].updatedAt = Date()
+        persist()
+        refresh()
+    }
+
     func restore(_ id: UUID) {
         guard let index = records.firstIndex(where: { $0.id == id }) else { return }
 
         records[index].isArchived = false
+        records[index].snoozedUntil = nil
         records[index].updatedAt = Date()
         persist()
 
@@ -359,6 +389,9 @@ final class OverlayManager: NSObject {
             onDelete: { [weak self] in
                 self?.delete(id)
             },
+            onSnooze: { [weak self] date in
+                self?.snooze(id, until: date)
+            },
             onDismiss: { [weak self] in
                 self?.finishEditing()
             }
@@ -427,11 +460,31 @@ final class OverlayManager: NSObject {
             return
         }
 
+        let matchingRecords = records
+            .filter { !$0.isArchived && !$0.isSnoozed && context.matches($0) }
+            .sorted { $0.createdAt < $1.createdAt }
+
+        let resolvedCenters = resolvedMarkerCenters(
+            for: matchingRecords,
+            context: context
+        )
+
         for record in records where !record.isArchived {
             guard let panel = panels[record.id] else { continue }
 
+            if record.isSnoozed {
+                panel.orderOut(nil)
+                decide(
+                    record: record,
+                    visible: false,
+                    reason: "Snoozed until \(record.snoozedUntil?.description ?? "later")"
+                )
+                continue
+            }
+
             if context.matches(record) {
-                let point = record.anchorPoint(in: context.windowFrame)
+                let point = resolvedCenters[record.id]
+                    ?? record.anchorPoint(in: context.windowFrame)
                 reposition(panel, center: point)
                 panel.orderFrontRegardless()
                 decide(
@@ -558,6 +611,71 @@ final class OverlayManager: NSObject {
                 "reason: \(reason)"
             ].joined(separator: "\n")
         )
+    }
+
+    private func resolvedMarkerCenters(
+        for records: [BreadcrumbRecord],
+        context: ContextSnapshot
+    ) -> [UUID: CGPoint] {
+        guard let frame = context.windowFrame else {
+            return Dictionary(
+                uniqueKeysWithValues: records.map { ($0.id, $0.anchorPoint(in: nil)) }
+            )
+        }
+
+        let markerSize = CGSize(width: 176, height: 40)
+        let verticalStep: CGFloat = 46
+        let horizontalPadding: CGFloat = 8
+        let verticalPadding: CGFloat = 8
+
+        var result: [UUID: CGPoint] = [:]
+        var occupied: [CGRect] = []
+
+        func rect(for center: CGPoint) -> CGRect {
+            CGRect(
+                x: center.x - markerSize.width / 2,
+                y: center.y - markerSize.height / 2,
+                width: markerSize.width,
+                height: markerSize.height
+            )
+        }
+
+        func clamped(_ point: CGPoint) -> CGPoint {
+            CGPoint(
+                x: min(
+                    max(point.x, frame.minX + markerSize.width / 2 + horizontalPadding),
+                    frame.maxX - markerSize.width / 2 - horizontalPadding
+                ),
+                y: min(
+                    max(point.y, frame.minY + markerSize.height / 2 + verticalPadding),
+                    frame.maxY - markerSize.height / 2 - verticalPadding
+                )
+            )
+        }
+
+        for record in records {
+            let desired = clamped(record.anchorPoint(in: frame))
+            var candidates: [CGPoint] = [desired]
+
+            for step in 1...6 {
+                candidates.append(
+                    clamped(CGPoint(x: desired.x, y: desired.y - CGFloat(step) * verticalStep))
+                )
+                candidates.append(
+                    clamped(CGPoint(x: desired.x, y: desired.y + CGFloat(step) * verticalStep))
+                )
+            }
+
+            let chosen = candidates.first { candidate in
+                let candidateRect = rect(for: candidate).insetBy(dx: -4, dy: -3)
+                return !occupied.contains { $0.intersects(candidateRect) }
+            } ?? desired
+
+            result[record.id] = chosen
+            occupied.append(rect(for: chosen))
+        }
+
+        return result
     }
 
     private func reposition(_ panel: NSPanel, center point: CGPoint) {
