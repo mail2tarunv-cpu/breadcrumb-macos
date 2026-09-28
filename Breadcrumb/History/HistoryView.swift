@@ -102,9 +102,21 @@ private struct HistoryRow: View {
                     .foregroundStyle(record.isArchived ? .tertiary : .secondary)
 
                 VStack(alignment: .leading, spacing: 5) {
-                    Text(record.text)
-                        .font(.system(size: 14, weight: .medium))
-                        .lineLimit(isExpanded ? nil : 2)
+                    HStack(spacing: 7) {
+                        Text(record.text)
+                            .font(.system(size: 14, weight: .medium))
+                            .lineLimit(isExpanded ? nil : 2)
+
+                        if record.isLegacyContext {
+                            Text("Legacy context")
+                                .font(.system(size: 9, weight: .semibold))
+                                .foregroundStyle(.secondary)
+                                .padding(.horizontal, 6)
+                                .padding(.vertical, 2)
+                                .background(.quaternary)
+                                .clipShape(Capsule())
+                        }
+                    }
 
                     HStack(spacing: 5) {
                         Text(record.applicationName)
@@ -166,6 +178,7 @@ private struct HistoryRow: View {
                         record.windowNumber.map(String.init) ?? "Unavailable"
                     )
                     contextRow("Display", record.displayIdentifier ?? "Unavailable")
+                    contextRow("Context version", record.contextVersion.map(String.init) ?? "Legacy")
                     contextRow(
                         "Anchor",
                         String(
