@@ -267,4 +267,152 @@ final class BreadcrumbTests: XCTestCase {
 
         XCTAssertEqual(loaded, [record])
     }
+    func testStoreRecoversFromCorruptPrimaryUsingBackup() throws {
+        let suiteName = "BreadcrumbTests.Recovery.\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suiteName)!
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+
+        let store = BreadcrumbStore(defaults: defaults)
+        let context = ContextSnapshot(
+            bundleIdentifier: "com.test.app",
+            applicationName: "Test",
+            windowTitle: "Document",
+            windowFrame: CGRect(x: 0, y: 0, width: 800, height: 600)
+        )
+
+        let original = BreadcrumbRecord(
+            text: "Recover me",
+            context: context,
+            anchorPoint: CGPoint(x: 200, y: 180)
+        )
+
+        store.save([original])
+        defaults.set(Data("not-json".utf8), forKey: "breadcrumb.records.v1")
+
+        let recovered = store.load()
+
+        XCTAssertEqual(recovered, [original])
+        XCTAssertEqual(
+            try JSONDecoder().decode(
+                [BreadcrumbRecord].self,
+                from: XCTUnwrap(defaults.data(forKey: "breadcrumb.records.v1"))
+            ),
+            [original]
+        )
+    }
+
+    func testSameSessionSameTitleDifferentWindowDoesNotMatch() {
+        let frame = CGRect(x: 20, y: 40, width: 900, height: 700)
+
+        let original = ContextSnapshot(
+            bundleIdentifier: "com.apple.finder",
+            applicationName: "Finder",
+            windowTitle: "Downloads",
+            windowFrame: frame,
+            processIdentifier: 101,
+            windowNumber: 10
+        )
+
+        let record = BreadcrumbRecord(
+            text: "Window-specific",
+            context: original,
+            anchorPoint: CGPoint(x: 300, y: 300)
+        )
+
+        let otherWindow = ContextSnapshot(
+            bundleIdentifier: "com.apple.finder",
+            applicationName: "Finder",
+            windowTitle: "Downloads",
+            windowFrame: frame,
+            processIdentifier: 101,
+            windowNumber: 11
+        )
+
+        XCTAssertFalse(otherWindow.matches(record))
+    }
+
+    func testRelaunchTitleFallbackRejectsDifferentTabTitle() {
+        let frame = CGRect(x: 0, y: 0, width: 1200, height: 800)
+
+        let original = ContextSnapshot(
+            bundleIdentifier: "com.apple.Safari",
+            applicationName: "Safari",
+            windowTitle: "Dashboard",
+            windowFrame: frame,
+            processIdentifier: 100,
+            windowNumber: 10,
+            documentURL: "https://example.com/old",
+            selectedTabTitle: "Project Alpha",
+            selectedTabIndex: 0
+        )
+
+        let record = BreadcrumbRecord(
+            text: "Alpha only",
+            context: original,
+            anchorPoint: CGPoint(x: 420, y: 350)
+        )
+
+        let relaunchedDifferentTab = ContextSnapshot(
+            bundleIdentifier: "com.apple.Safari",
+            applicationName: "Safari",
+            windowTitle: "Dashboard",
+            windowFrame: frame,
+            processIdentifier: 200,
+            windowNumber: 99,
+            documentURL: "https://example.com/new",
+            selectedTabTitle: "Project Beta",
+            selectedTabIndex: 0
+        )
+
+        XCTAssertFalse(relaunchedDifferentTab.matches(record))
+    }
+
+    func testAnchorStaysRelativeAfterMoveResizeAndDisplayChange() {
+        let originalFrame = CGRect(x: 100, y: 100, width: 1000, height: 800)
+        let context = ContextSnapshot(
+            bundleIdentifier: "com.figma.Desktop",
+            applicationName: "Figma",
+            windowTitle: "Design File",
+            windowFrame: originalFrame,
+            displayIdentifier: "display-a"
+        )
+
+        let record = BreadcrumbRecord(
+            text: "Keep position",
+            context: context,
+            anchorPoint: CGPoint(x: 850, y: 300)
+        )
+
+        XCTAssertEqual(record.relativeX, 0.75, accuracy: 0.0001)
+        XCTAssertEqual(record.relativeY, 0.25, accuracy: 0.0001)
+
+        let movedFrame = CGRect(x: -1200, y: 240, width: 800, height: 600)
+        let movedPoint = record.anchorPoint(in: movedFrame)
+
+        XCTAssertEqual(movedPoint.x, -600, accuracy: 0.0001)
+        XCTAssertEqual(movedPoint.y, 390, accuracy: 0.0001)
+    }
+
+    func testAnchorCoordinatesClampToWindowBoundsWhenCreatedOutsideFrame() {
+        let frame = CGRect(x: 100, y: 100, width: 600, height: 400)
+        let context = ContextSnapshot(
+            bundleIdentifier: "com.test.app",
+            applicationName: "Test",
+            windowTitle: "Document",
+            windowFrame: frame
+        )
+
+        let record = BreadcrumbRecord(
+            text: "Clamp me",
+            context: context,
+            anchorPoint: CGPoint(x: 900, y: -200)
+        )
+
+        XCTAssertEqual(record.relativeX, 1, accuracy: 0.0001)
+        XCTAssertEqual(record.relativeY, 0, accuracy: 0.0001)
+
+        let point = record.anchorPoint(in: frame)
+        XCTAssertEqual(point.x, frame.maxX, accuracy: 0.0001)
+        XCTAssertEqual(point.y, frame.minY, accuracy: 0.0001)
+    }
 }
