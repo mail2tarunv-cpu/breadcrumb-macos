@@ -36,7 +36,8 @@ final class BreadcrumbEditorController {
         panel.hasShadow = true
         panel.level = .floating
         panel.collectionBehavior = [.moveToActiveSpace, .fullScreenAuxiliary]
-        panel.hidesOnDeactivate = true
+        panel.hidesOnDeactivate = false
+        panel.becomesKeyOnlyIfNeeded = false
 
         let view = BreadcrumbEditorView(
             text: record.text,
@@ -58,8 +59,18 @@ final class BreadcrumbEditorController {
 
         panel.contentView = NSHostingView(rootView: view)
         panel.orderFrontRegardless()
-        panel.makeKey()
+        panel.makeKeyAndOrderFront(nil)
         self.panel = panel
+
+        DiagnosticLog.shared.record(
+            category: "Action",
+            summary: "Editor panel presented",
+            detail: [
+                "breadcrumb: \(record.id.uuidString)",
+                "anchor: \(NSStringFromPoint(anchorPoint))",
+                "panelFrame: \(NSStringFromRect(panel.frame))"
+            ].joined(separator: "\n")
+        )
     }
 
     func dismiss() {
