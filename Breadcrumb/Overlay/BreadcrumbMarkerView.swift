@@ -30,16 +30,11 @@ struct BreadcrumbMarkerView: View {
         }
         .padding(.horizontal, 10)
         .frame(width: 164, height: 34)
-        .background(.regularMaterial)
+        .background(Color.white.opacity(0.97))
         .clipShape(Capsule())
         .overlay {
             Capsule()
-                .fill(breadcrumbColor.color.opacity(isHovering ? 0.18 : 0.12))
-                .allowsHitTesting(false)
-        }
-        .overlay {
-            Capsule()
-                .stroke(breadcrumbColor.color.opacity(isHovering ? 0.55 : 0.35), lineWidth: 0.6)
+                .stroke(.black.opacity(isHovering ? 0.10 : 0.06), lineWidth: 0.5)
                 .allowsHitTesting(false)
         }
         .shadow(radius: isHovering ? 8 : 5, y: 3)
