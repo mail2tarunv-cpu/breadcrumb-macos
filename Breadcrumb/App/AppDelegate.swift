@@ -100,7 +100,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private func configureMenuBar() {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
         statusItem.button?.image = NSImage(
-            systemSymbolName: "point.topleft.down.to.point.bottomright.curvepath",
+            systemSymbolName: "circle.dotted",
             accessibilityDescription: "Breadcrumb"
         )
 
@@ -118,19 +118,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         newItem.keyEquivalentModifierMask = [.option]
         menu.addItem(newItem)
 
-        let activeCount = overlayManager.allRecords.filter { !$0.isArchived }.count
-        let libraryTitle = activeCount == 0
-            ? "Breadcrumbs…"
-            : "Breadcrumbs…  \(activeCount)"
-
-        menu.addItem(
-            NSMenuItem(
-                title: libraryTitle,
-                action: #selector(openHistory),
-                keyEquivalent: ""
-            )
-        )
-
         menu.addItem(
             NSMenuItem(
                 title: "Pick Up Where I Left Off…",
@@ -139,10 +126,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             )
         )
 
+        let activeCount = overlayManager.allRecords.filter { !$0.isArchived }.count
+        let libraryTitle = activeCount == 0
+            ? "Open Library…"
+            : "Open Library…  \(activeCount)"
+
         menu.addItem(
             NSMenuItem(
-                title: "Context Diagnostics…",
-                action: #selector(openDiagnostics),
+                title: libraryTitle,
+                action: #selector(openHistory),
                 keyEquivalent: ""
             )
         )
