@@ -45,8 +45,9 @@ struct ResumeContextView: View {
 
             Divider()
 
-            VStack(spacing: 0) {
-                ForEach(records.prefix(5)) { record in
+            ScrollView {
+                LazyVStack(spacing: 0) {
+                    ForEach(records) { record in
                     HStack(alignment: .top, spacing: 10) {
                         Circle()
                             .fill(record.breadcrumbColor.color)
@@ -87,20 +88,18 @@ struct ResumeContextView: View {
                     .padding(.horizontal, 14)
                     .padding(.vertical, 10)
 
-                    if record.id != records.prefix(5).last?.id {
-                        Divider().padding(.leading, 30)
+                        if record.id != records.last?.id {
+                            Divider().padding(.leading, 30)
+                        }
                     }
                 }
             }
+            .frame(maxHeight: 320)
 
             Divider()
 
             HStack {
-                if records.count > 5 {
-                    Text("+\(records.count - 5) more in this context")
-                } else {
-                    Text("\(records.count) active breadcrumb\(records.count == 1 ? "" : "s")")
-                }
+                Text("\(records.count) active breadcrumb\(records.count == 1 ? "" : "s")")
 
                 Spacer()
 
