@@ -12,6 +12,7 @@ struct BreadcrumbRecord: Codable, Identifiable, Equatable {
     let selectedTabTitle: String?
     let selectedTabIndex: Int?
     let displayIdentifier: String?
+    let contextVersion: Int?
     var relativeX: Double
     var relativeY: Double
     let fallbackScreenX: Double
@@ -37,6 +38,7 @@ struct BreadcrumbRecord: Codable, Identifiable, Equatable {
         self.selectedTabTitle = context.selectedTabTitle
         self.selectedTabIndex = context.selectedTabIndex
         self.displayIdentifier = context.displayIdentifier
+        self.contextVersion = 2
         self.fallbackScreenX = anchorPoint.x
         self.fallbackScreenY = anchorPoint.y
         self.createdAt = Date()
@@ -52,7 +54,13 @@ struct BreadcrumbRecord: Codable, Identifiable, Equatable {
         }
     }
 
+    var isLegacyContext: Bool {
+        contextVersion != 2
+    }
+
     var hasStableContext: Bool {
+        guard !isLegacyContext else { return false }
+
         let hasDocument = !(documentURL?
             .trimmingCharacters(in: .whitespacesAndNewlines)
             .isEmpty ?? true)
