@@ -39,6 +39,17 @@ struct HistoryView: View {
         return source.sorted { $0.updatedAt > $1.updatedAt }
     }
 
+    private var groupedRecords: [(app: String, records: [BreadcrumbRecord])] {
+        Dictionary(grouping: filteredRecords, by: \.applicationName)
+            .map { app, records in
+                (
+                    app: app,
+                    records: records.sorted { $0.updatedAt > $1.updatedAt }
+                )
+            }
+            .sorted { $0.app.localizedCaseInsensitiveCompare($1.app) == .orderedAscending }
+    }
+
     private var activeCount: Int {
         records.filter { !$0.isArchived && !$0.isSnoozed }.count
     }
@@ -94,15 +105,19 @@ struct HistoryView: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
                 List {
-                    ForEach(filteredRecords) { record in
-                        BreadcrumbLibraryRow(
-                            record: record,
-                            onRestore: { onRestore(record.id) },
-                            onArchive: { onArchive(record.id) },
-                            onDelete: { onDelete(record.id) },
-                            onSnooze: { date in onSnooze(record.id, date) },
-                            onWake: { onWake(record.id) }
-                        )
+                    ForEach(groupedRecords, id: \.app) { group in
+                        Section(group.app) {
+                            ForEach(group.records) { record in
+                                BreadcrumbLibraryRow(
+                                    record: record,
+                                    onRestore: { onRestore(record.id) },
+                                    onArchive: { onArchive(record.id) },
+                                    onDelete: { onDelete(record.id) },
+                                    onSnooze: { date in onSnooze(record.id, date) },
+                                    onWake: { onWake(record.id) }
+                                )
+                            }
+                        }
                     }
                 }
                 .listStyle(.inset)
