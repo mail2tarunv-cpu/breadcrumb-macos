@@ -85,6 +85,7 @@ final class OverlayManager: NSObject {
     private let contextObserver: ContextObserver
     private let store: BreadcrumbStore
     private let editorController = BreadcrumbEditorController()
+    private let resumeContextController = ResumeContextController()
 
     private var records: [BreadcrumbRecord]
     private var panels: [UUID: NSPanel] = [:]
@@ -109,6 +110,53 @@ final class OverlayManager: NSObject {
 
     var allRecords: [BreadcrumbRecord] {
         records
+    }
+
+    func presentResumeContext() {
+        guard let context = contextObserver.captureCurrent() else {
+            DiagnosticLog.shared.record(
+                category: "Action",
+                summary: "Resume Context unavailable",
+                detail: "No focused window context."
+            )
+            return
+        }
+
+        let matching = records
+            .filter { !$0.isArchived && !$0.isSnoozed && context.matches($0) }
+            .sorted { $0.updatedAt > $1.updatedAt }
+
+        guard !matching.isEmpty else {
+            DiagnosticLog.shared.record(
+                category: "Action",
+                summary: "Resume Context empty",
+                detail: "No active breadcrumbs matched the current context."
+            )
+            return
+        }
+
+        let contextTitle: String?
+        if let tab = context.selectedTabTitle, !tab.isEmpty {
+            contextTitle = tab
+        } else {
+            contextTitle = context.windowTitle
+        }
+
+        resumeContextController.present(
+            applicationName: context.applicationName,
+            contextTitle: contextTitle,
+            records: matching,
+            near: context.windowFrame,
+            onEdit: { [weak self] id in
+                self?.openEditor(for: id)
+            },
+            onArchive: { [weak self] id in
+                self?.archive(id)
+            },
+            onSnooze: { [weak self] id, date in
+                self?.snooze(id, until: date)
+            }
+        )
     }
 
     func start() {
