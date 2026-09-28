@@ -112,6 +112,7 @@ final class OverlayManager: NSObject {
 
     private let autoResumeEnabledKey = "breadcrumb.resume.autoEnabled"
     private let autoResumeCooldownKey = "breadcrumb.resume.cooldownMinutes"
+    private let contextHistoryKey = "breadcrumb.context.lastLeft.v1"
 
     init(contextObserver: ContextObserver, store: BreadcrumbStore) {
         self.contextObserver = contextObserver
@@ -121,6 +122,13 @@ final class OverlayManager: NSObject {
             autoResumeEnabledKey: true,
             autoResumeCooldownKey: 15.0
         ])
+
+        if let stored = UserDefaults.standard.dictionary(forKey: contextHistoryKey) as? [String: Double] {
+            self.lastLeftAtByContext = stored.reduce(into: [:]) { result, item in
+                result[item.key] = Date(timeIntervalSince1970: item.value)
+            }
+        }
+
         super.init()
     }
 
@@ -164,7 +172,7 @@ final class OverlayManager: NSObject {
     }
 
     func start() {
-        for record in records where !record.isArchived && record.hasStableContext {
+        for record in records where !record.isArchived && !record.isDone && record.hasStableContext {
             createPanelIfNeeded(for: record)
         }
 
@@ -304,11 +312,49 @@ final class OverlayManager: NSObject {
         refresh()
     }
 
+    func markDone(_ id: UUID) {
+        guard let index = records.firstIndex(where: { $0.id == id }) else { return }
+
+        records[index].completedAt = Date()
+        records[index].snoozedUntil = nil
+        records[index].updatedAt = Date()
+        persist()
+
+        panels[id]?.orderOut(nil)
+        if editingRecordID == id {
+            editingRecordID = nil
+        }
+        editorController.dismiss()
+
+        DiagnosticLog.shared.record(
+            category: "Action",
+            summary: "Completed breadcrumb",
+            detail: "id: \(id.uuidString)"
+        )
+
+        refresh(preferredContext: lastStableTargetContext)
+    }
+
+    func reopen(_ id: UUID) {
+        guard let index = records.firstIndex(where: { $0.id == id }) else { return }
+
+        records[index].completedAt = nil
+        records[index].updatedAt = Date()
+        persist()
+
+        if records[index].hasStableContext {
+            createPanelIfNeeded(for: records[index])
+        }
+
+        refresh()
+    }
+
     func restore(_ id: UUID) {
         guard let index = records.firstIndex(where: { $0.id == id }) else { return }
 
         records[index].isArchived = false
         records[index].snoozedUntil = nil
+        records[index].completedAt = nil
         records[index].updatedAt = Date()
         persist()
 
@@ -364,6 +410,7 @@ final class OverlayManager: NSObject {
     private func createPanelIfNeeded(for record: BreadcrumbRecord) {
         guard panels[record.id] == nil,
               !record.isArchived,
+              !record.isDone,
               record.hasStableContext else {
             return
         }
@@ -466,6 +513,9 @@ final class OverlayManager: NSObject {
             onColorChange: { [weak self] color in
                 self?.updateColor(id, color: color)
             },
+            onDone: { [weak self] in
+                self?.markDone(id)
+            },
             onArchive: { [weak self] in
                 self?.archive(id)
             },
@@ -543,7 +593,7 @@ final class OverlayManager: NSObject {
         }
 
         guard let context else {
-            for record in records where !record.isArchived {
+            for record in records where !record.isArchived && !record.isDone {
                 hide(record: record, reason: "No focused window context")
             }
             editorController.dismiss()
@@ -551,7 +601,7 @@ final class OverlayManager: NSObject {
         }
 
         if context.isMinimized {
-            for record in records where !record.isArchived {
+            for record in records where !record.isArchived && !record.isDone {
                 hide(record: record, reason: "Focused target window is minimized")
             }
             editorController.dismiss()
@@ -576,7 +626,7 @@ final class OverlayManager: NSObject {
             context: context
         )
 
-        for record in records where !record.isArchived {
+        for record in records where !record.isArchived && !record.isDone {
             guard let panel = panels[record.id] else { continue }
 
             if record.id == editingRecordID {
@@ -656,7 +706,7 @@ final class OverlayManager: NSObject {
 
     private func matchingRecords(for context: ContextSnapshot) -> [BreadcrumbRecord] {
         records
-            .filter { !$0.isArchived && !$0.isSnoozed && context.matches($0) }
+            .filter { !$0.isArchived && !$0.isDone && !$0.isSnoozed && context.matches($0) }
             .sorted { $0.updatedAt > $1.updatedAt }
     }
 
@@ -683,11 +733,17 @@ final class OverlayManager: NSObject {
 
         if let previous = activeContextKey {
             lastLeftAtByContext[previous] = now
+            persistContextHistory()
         }
 
         activeContextKey = key
         autoResumeCandidateKey = key
         autoResumeCandidateSince = now
+    }
+
+    private func persistContextHistory() {
+        let encoded = lastLeftAtByContext.mapValues { $0.timeIntervalSince1970 }
+        UserDefaults.standard.set(encoded, forKey: contextHistoryKey)
     }
 
     private func maybeAutoPresentResumeContext(
