@@ -5,11 +5,11 @@ struct BreadcrumbEditorView: View {
     @FocusState private var isFocused: Bool
     @State private var isConfirmingDelete = false
     @State private var isShowingColorPicker = false
+    @State private var selectedColor: BreadcrumbColor
 
     let applicationName: String
     let windowTitle: String?
     let createdAt: Date
-    let breadcrumbColor: BreadcrumbColor
     let onColorChange: (BreadcrumbColor) -> Void
     let onSave: (String) -> Void
     let onArchive: () -> Void
@@ -34,7 +34,7 @@ struct BreadcrumbEditorView: View {
         self.applicationName = applicationName
         self.windowTitle = windowTitle
         self.createdAt = createdAt
-        self.breadcrumbColor = breadcrumbColor
+        _selectedColor = State(initialValue: breadcrumbColor)
         self.onColorChange = onColorChange
         self.onSave = onSave
         self.onArchive = onArchive
@@ -50,7 +50,7 @@ struct BreadcrumbEditorView: View {
                     isShowingColorPicker.toggle()
                 } label: {
                     Circle()
-                        .fill(breadcrumbColor.color)
+                        .fill(selectedColor.color)
                         .frame(width: 9, height: 9)
                         .contentShape(Circle())
                 }
@@ -65,6 +65,7 @@ struct BreadcrumbEditorView: View {
                         HStack(spacing: 9) {
                             ForEach(BreadcrumbColor.allCases) { color in
                                 Button {
+                                    selectedColor = color
                                     onColorChange(color)
                                     isShowingColorPicker = false
                                 } label: {
@@ -73,7 +74,7 @@ struct BreadcrumbEditorView: View {
                                             .fill(color.color)
                                             .frame(width: 22, height: 22)
 
-                                        if breadcrumbColor == color {
+                                        if selectedColor == color {
                                             Image(systemName: "checkmark")
                                                 .font(.system(size: 8, weight: .bold))
                                                 .foregroundStyle(.black.opacity(0.55))
