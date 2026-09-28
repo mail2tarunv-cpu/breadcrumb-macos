@@ -29,7 +29,7 @@ final class HotKeyManager {
 
         let pointer = Unmanaged.passUnretained(self).toOpaque()
 
-        InstallEventHandler(
+        let status = InstallEventHandler(
             GetApplicationEventTarget(),
             { _, event, userData in
                 guard let event, let userData else { return noErr }
@@ -62,18 +62,30 @@ final class HotKeyManager {
             pointer,
             &eventHandler
         )
+
+        DiagnosticLog.shared.record(
+            category: "Hotkey",
+            summary: status == noErr ? "Hotkey handler installed" : "Hotkey handler failed",
+            detail: "InstallEventHandler status: \(status)"
+        )
     }
 
     private func registerShortcut() {
         let id = EventHotKeyID(signature: fourCharCode("BRDC"), id: 1)
 
-        RegisterEventHotKey(
+        let status = RegisterEventHotKey(
             UInt32(kVK_Space),
             UInt32(optionKey),
             id,
             GetApplicationEventTarget(),
             0,
             &hotKeyRef
+        )
+
+        DiagnosticLog.shared.record(
+            category: "Hotkey",
+            summary: status == noErr ? "⌥ Space registered" : "⌥ Space registration failed",
+            detail: "RegisterEventHotKey status: \(status)"
         )
     }
 
