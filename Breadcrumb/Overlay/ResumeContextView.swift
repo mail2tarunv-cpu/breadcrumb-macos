@@ -6,6 +6,7 @@ struct ResumeContextView: View {
     let records: [BreadcrumbRecord]
     let onEdit: (UUID) -> Void
     let onArchive: (UUID) -> Void
+    let onDone: (UUID) -> Void
     let onSnooze: (UUID, Date) -> Void
     let onClose: () -> Void
 
@@ -73,6 +74,10 @@ struct ResumeContextView: View {
                         .controlSize(.small)
 
                         Menu {
+                            Button("Mark Done", systemImage: "checkmark.circle") {
+                                onDone(record.id)
+                            }
+                            Divider()
                             Button("Snooze for 1 Hour", systemImage: "clock") {
                                 onSnooze(record.id, Date().addingTimeInterval(60 * 60))
                             }
