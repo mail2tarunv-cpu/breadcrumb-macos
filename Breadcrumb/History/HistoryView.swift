@@ -109,6 +109,7 @@ private struct HistoryCard: View {
 
     @State private var isExpanded = false
     @State private var isHovering = false
+    @State private var showDeleteConfirmation = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -140,11 +141,9 @@ private struct HistoryCard: View {
 
                         Text("·")
                         if record.isSnoozed, let snoozedUntil = record.snoozedUntil {
-                            Text("·")
                             Text("Snoozed")
                             Text(snoozedUntil, style: .relative)
                         } else {
-                            Text("·")
                             Text(record.updatedAt, style: .relative)
                         }
                     }
@@ -190,7 +189,9 @@ private struct HistoryCard: View {
                         isExpanded.toggle()
                     }
                     Divider()
-                    Button("Delete Permanently", systemImage: "trash", role: .destructive, action: onDelete)
+                    Button("Delete Permanently", systemImage: "trash", role: .destructive) {
+                        showDeleteConfirmation = true
+                    }
                 } label: {
                     Image(systemName: "ellipsis")
                         .frame(width: 24, height: 24)
@@ -225,6 +226,16 @@ private struct HistoryCard: View {
         .animation(.easeOut(duration: 0.15), value: isHovering)
         .onHover { isHovering = $0 }
         .opacity(record.isArchived ? 0.68 : (record.isSnoozed ? 0.78 : 1))
+        .confirmationDialog(
+            "Delete this breadcrumb permanently?",
+            isPresented: $showDeleteConfirmation,
+            titleVisibility: .visible
+        ) {
+            Button("Delete Permanently", role: .destructive, action: onDelete)
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("This cannot be undone.")
+        }
     }
 
     private var visibleContext: String? {
