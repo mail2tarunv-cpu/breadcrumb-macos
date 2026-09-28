@@ -11,6 +11,7 @@ struct BreadcrumbEditorView: View {
     let windowTitle: String?
     let createdAt: Date
     let onColorChange: (BreadcrumbColor) -> Void
+    let onDone: () -> Void
     let onSave: (String) -> Void
     let onArchive: () -> Void
     let onDelete: () -> Void
@@ -24,6 +25,7 @@ struct BreadcrumbEditorView: View {
         createdAt: Date,
         breadcrumbColor: BreadcrumbColor,
         onColorChange: @escaping (BreadcrumbColor) -> Void,
+        onDone: @escaping () -> Void,
         onSave: @escaping (String) -> Void,
         onArchive: @escaping () -> Void,
         onDelete: @escaping () -> Void,
@@ -36,6 +38,7 @@ struct BreadcrumbEditorView: View {
         self.createdAt = createdAt
         _selectedColor = State(initialValue: breadcrumbColor)
         self.onColorChange = onColorChange
+        self.onDone = onDone
         self.onSave = onSave
         self.onArchive = onArchive
         self.onDelete = onDelete
@@ -104,6 +107,10 @@ struct BreadcrumbEditorView: View {
                 Spacer(minLength: 10)
 
                 Menu {
+                    Button("Mark Done", systemImage: "checkmark.circle") {
+                        onDone()
+                    }
+                    Divider()
                     Button("Snooze for 1 Hour", systemImage: "clock") {
                         onSnooze(Date().addingTimeInterval(60 * 60))
                     }
