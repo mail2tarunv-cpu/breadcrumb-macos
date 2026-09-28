@@ -4,6 +4,7 @@ import SwiftUI
 struct ComposerView: View {
     @State private var text = ""
     @State private var editorHeight: CGFloat = 24
+    @AppStorage("breadcrumb.capture.shortcut") private var captureShortcutRaw = CaptureShortcut.optionSpace.rawValue
 
     let contextAvailable: Bool
     let contextLabel: String?
@@ -64,7 +65,7 @@ struct ComposerView: View {
             HStack {
                 Text("Enter to save")
                 Spacer()
-                Text("Shift↩ new line  ·  Esc close")
+                Text("\((CaptureShortcut(rawValue: captureShortcutRaw) ?? .optionSpace).title)  ·  Shift↩ new line  ·  Esc close")
             }
             .font(.system(size: 9.5))
             .foregroundStyle(.tertiary)
