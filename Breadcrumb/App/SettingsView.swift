@@ -25,8 +25,7 @@ struct SettingsView: View {
             advanced
                 .tabItem { Label("Advanced", systemImage: "wrench.and.screwdriver") }
         }
-        .padding(20)
-        .frame(width: 560, height: 480)
+        .frame(width: 520, height: 420)
     }
 
     private var general: some View {
@@ -34,14 +33,11 @@ struct SettingsView: View {
             Section("Capture") {
                 LabeledContent("New breadcrumb") {
                     Text("⌥ Space")
-                        .font(.system(size: 12, weight: .semibold, design: .rounded))
-                        .padding(.horizontal, 7)
-                        .padding(.vertical, 3)
-                        .background(.quaternary.opacity(0.7))
-                        .clipShape(RoundedRectangle(cornerRadius: 5, style: .continuous))
+                        .font(.system(size: 11.5, weight: .semibold, design: .rounded))
+                        .foregroundStyle(.secondary)
                 }
 
-                Text("Opens the capture box beside your pointer and saves the thought to the current window or tab.")
+                Text("Opens the capture palette beside your pointer and attaches the thought to the current window or tab.")
                     .font(.system(size: 11))
                     .foregroundStyle(.secondary)
             }
@@ -59,11 +55,12 @@ struct SettingsView: View {
                 }
             }
 
-            Section("Library") {
+            Section {
                 Button("Open Breadcrumb Library…", action: onOpenLibrary)
             }
         }
         .formStyle(.grouped)
+        .padding(.horizontal, 8)
     }
 
     private var context: some View {
@@ -80,13 +77,13 @@ struct SettingsView: View {
                     }
                 }
 
-                Text("Breadcrumb uses Accessibility to identify the active app, window, tab, and window position. Note content remains local.")
+                Text("Breadcrumb uses Accessibility only to identify the active app, window, tab, and window position.")
                     .font(.system(size: 11))
                     .foregroundStyle(.secondary)
             }
 
             Section("Pick Up Where I Left Off") {
-                Toggle("Automatically show context summary", isOn: $autoResumeEnabled)
+                Toggle("Show context summary automatically", isOn: $autoResumeEnabled)
 
                 if autoResumeEnabled {
                     Picker("Show again after", selection: $autoResumeCooldownMinutes) {
@@ -95,35 +92,22 @@ struct SettingsView: View {
                         Text("30 minutes").tag(30.0)
                         Text("1 hour").tag(60.0)
                     }
-
-                    LabeledContent("Minimum breadcrumbs") {
-                        Text("2")
-                            .foregroundStyle(.secondary)
-                    }
                 }
 
-                Text("When you return to a window or tab with two or more active breadcrumbs, Breadcrumb can briefly surface them together so you can pick up where you left off.")
+                Text("When you return to a window or tab with two or more active breadcrumbs, Breadcrumb can briefly show them together.")
                     .font(.system(size: 11))
                     .foregroundStyle(.secondary)
-
-                Text("The summary waits until you stay in the context briefly and respects the cooldown above.")
-                    .font(.system(size: 11))
-                    .foregroundStyle(.tertiary)
             }
         }
         .formStyle(.grouped)
+        .padding(.horizontal, 8)
     }
 
     private var data: some View {
         Form {
             Section("Storage") {
                 LabeledContent("Breadcrumbs") {
-                    Text("Stored locally on this Mac")
-                        .foregroundStyle(.secondary)
-                }
-
-                LabeledContent("Account") {
-                    Text("None")
+                    Text("On this Mac")
                         .foregroundStyle(.secondary)
                 }
 
@@ -134,12 +118,13 @@ struct SettingsView: View {
             }
 
             Section("Privacy") {
-                Text("Breadcrumb does not need a server account for the current version. Window metadata and notes remain on this Mac.")
+                Text("No account is required. Breadcrumb notes and window metadata remain local in the current version.")
                     .font(.system(size: 11))
                     .foregroundStyle(.secondary)
             }
         }
         .formStyle(.grouped)
+        .padding(.horizontal, 8)
     }
 
     private var advanced: some View {
@@ -147,26 +132,24 @@ struct SettingsView: View {
             Section("Troubleshooting") {
                 Button("Open Context Diagnostics…", action: onOpenDiagnostics)
 
-                Text("Use diagnostics if a breadcrumb appears in the wrong window, fails to reappear, or window awareness stops working.")
+                Text("Diagnostics help explain why a breadcrumb appeared, disappeared, or failed to match a window.")
                     .font(.system(size: 11))
                     .foregroundStyle(.secondary)
             }
 
-            Section("Onboarding") {
+            Section {
                 Button("Show Welcome Screen Again", action: onShowOnboarding)
             }
 
             Section("About") {
-                LabeledContent("Version") {
-                    Text("1.3")
+                LabeledContent("Breadcrumb") {
+                    Text("Version 1.3")
                         .foregroundStyle(.secondary)
                 }
-                Text("Leave thoughts where they happen.")
-                    .font(.system(size: 11))
-                    .foregroundStyle(.secondary)
             }
         }
         .formStyle(.grouped)
+        .padding(.horizontal, 8)
     }
 
     private func updateLaunchAtLogin(_ enabled: Bool) {
