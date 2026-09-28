@@ -200,6 +200,22 @@ final class OverlayManager: NSObject {
         )
     }
 
+    func delete(_ id: UUID) {
+        guard let index = records.firstIndex(where: { $0.id == id }) else { return }
+
+        panels[id]?.orderOut(nil)
+        panels.removeValue(forKey: id)
+        records.remove(at: index)
+        persist()
+        editorController.dismiss()
+
+        DiagnosticLog.shared.record(
+            category: "Action",
+            summary: "Deleted breadcrumb",
+            detail: "id: \(id.uuidString)"
+        )
+    }
+
     func restore(_ id: UUID) {
         guard let index = records.firstIndex(where: { $0.id == id }) else { return }
 
@@ -246,7 +262,7 @@ final class OverlayManager: NSObject {
             return
         }
 
-        let size = NSSize(width: 132, height: 34)
+        let size = NSSize(width: 176, height: 40)
         let fallbackPoint = record.anchorPoint(in: nil)
 
         let panel = NSPanel(
@@ -318,6 +334,9 @@ final class OverlayManager: NSObject {
             },
             onArchive: { [weak self] in
                 self?.archive(id)
+            },
+            onDelete: { [weak self] in
+                self?.delete(id)
             }
         )
     }
