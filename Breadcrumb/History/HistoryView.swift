@@ -8,6 +8,8 @@ struct HistoryView: View {
     let onRestore: (UUID) -> Void
     let onArchive: (UUID) -> Void
     let onDelete: (UUID) -> Void
+    let onSnooze: (UUID, Date) -> Void
+    let onWake: (UUID) -> Void
 
     private var filteredRecords: [BreadcrumbRecord] {
         var source = records
@@ -56,7 +58,9 @@ struct HistoryView: View {
                                 record: record,
                                 onRestore: { onRestore(record.id) },
                                 onArchive: { onArchive(record.id) },
-                                onDelete: { onDelete(record.id) }
+                                onDelete: { onDelete(record.id) },
+                                onSnooze: { date in onSnooze(record.id, date) },
+                                onWake: { onWake(record.id) }
                             )
                         }
                     }
@@ -100,6 +104,8 @@ private struct HistoryCard: View {
     let onRestore: () -> Void
     let onArchive: () -> Void
     let onDelete: () -> Void
+    let onSnooze: (Date) -> Void
+    let onWake: () -> Void
 
     @State private var isExpanded = false
     @State private var isHovering = false
@@ -112,7 +118,7 @@ private struct HistoryCard: View {
                         .fill(.primary.opacity(0.055))
                         .frame(width: 34, height: 34)
 
-                    Image(systemName: record.isArchived ? "archivebox" : "circle.dotted")
+                    Image(systemName: record.isArchived ? "archivebox" : (record.isSnoozed ? "clock" : "circle.dotted"))
                         .font(.system(size: 14, weight: .medium))
                         .foregroundStyle(.secondary)
                 }
@@ -133,7 +139,14 @@ private struct HistoryCard: View {
                         }
 
                         Text("·")
-                        Text(record.updatedAt, style: .relative)
+                        if record.isSnoozed, let snoozedUntil = record.snoozedUntil {
+                            Text("·")
+                            Text("Snoozed")
+                            Text(snoozedUntil, style: .relative)
+                        } else {
+                            Text("·")
+                            Text(record.updatedAt, style: .relative)
+                        }
                     }
                     .font(.system(size: 10.5))
                     .foregroundStyle(.secondary)
@@ -143,6 +156,10 @@ private struct HistoryCard: View {
 
                 if record.isArchived {
                     Button("Restore", action: onRestore)
+                        .buttonStyle(.bordered)
+                        .controlSize(.small)
+                } else if record.isSnoozed {
+                    Button("Wake", action: onWake)
                         .buttonStyle(.bordered)
                         .controlSize(.small)
                 } else {
@@ -156,6 +173,19 @@ private struct HistoryCard: View {
                 }
 
                 Menu {
+                    if !record.isArchived {
+                        if record.isSnoozed {
+                            Button("Wake Now", systemImage: "sun.max", action: onWake)
+                        } else {
+                            Button("Snooze for 1 Hour", systemImage: "clock") {
+                                onSnooze(Date().addingTimeInterval(60 * 60))
+                            }
+                            Button("Snooze for 1 Day", systemImage: "moon.zzz") {
+                                onSnooze(Date().addingTimeInterval(60 * 60 * 24))
+                            }
+                        }
+                        Divider()
+                    }
                     Button(isExpanded ? "Hide Context" : "Show Context") {
                         isExpanded.toggle()
                     }
@@ -194,7 +224,7 @@ private struct HistoryCard: View {
         .shadow(radius: isHovering ? 8 : 0, y: 3)
         .animation(.easeOut(duration: 0.15), value: isHovering)
         .onHover { isHovering = $0 }
-        .opacity(record.isArchived ? 0.72 : 1)
+        .opacity(record.isArchived ? 0.68 : (record.isSnoozed ? 0.78 : 1))
     }
 
     private var visibleContext: String? {
