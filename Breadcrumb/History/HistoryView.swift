@@ -16,7 +16,9 @@ struct HistoryView: View {
 
         switch selectedFilter {
         case "Active":
-            source = source.filter { !$0.isArchived }
+            source = source.filter { !$0.isArchived && !$0.isSnoozed }
+        case "Snoozed":
+            source = source.filter { !$0.isArchived && $0.isSnoozed }
         case "Archived":
             source = source.filter { $0.isArchived }
         default:
@@ -41,6 +43,18 @@ struct HistoryView: View {
         records.filter { !$0.isArchived && !$0.isSnoozed }.count
     }
 
+    private var snoozedCount: Int {
+        records.filter { !$0.isArchived && $0.isSnoozed }.count
+    }
+
+    private var librarySummary: String {
+        if snoozedCount == 0 {
+            return activeCount == 1 ? "1 active breadcrumb" : "\(activeCount) active breadcrumbs"
+        }
+
+        return "\(activeCount) active · \(snoozedCount) snoozed"
+    }
+
     var body: some View {
         VStack(spacing: 0) {
             HStack(spacing: 14) {
@@ -48,7 +62,7 @@ struct HistoryView: View {
                     Text("Breadcrumbs")
                         .font(.system(size: 22, weight: .semibold))
 
-                    Text(activeCount == 1 ? "1 active breadcrumb" : "\(activeCount) active breadcrumbs")
+                    Text(librarySummary)
                         .font(.system(size: 11.5))
                         .foregroundStyle(.secondary)
                 }
@@ -58,10 +72,11 @@ struct HistoryView: View {
                 Picker("Filter", selection: $selectedFilter) {
                     Text("All").tag("All")
                     Text("Active").tag("Active")
+                    Text("Snoozed").tag("Snoozed")
                     Text("Archived").tag("Archived")
                 }
                 .pickerStyle(.segmented)
-                .frame(width: 220)
+                .frame(width: 300)
             }
             .padding(.horizontal, 20)
             .padding(.vertical, 16)
