@@ -38,24 +38,24 @@ struct BreadcrumbEditorView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            HStack(spacing: 10) {
+            HStack(spacing: 9) {
                 Image(systemName: "circle.dotted")
-                    .font(.system(size: 13, weight: .medium))
+                    .font(.system(size: 12.5, weight: .medium))
                     .foregroundStyle(.secondary)
 
-                VStack(alignment: .leading, spacing: 1) {
+                VStack(alignment: .leading, spacing: 0) {
                     Text(applicationName)
                         .font(.system(size: 12, weight: .semibold))
 
                     if let windowTitle, !windowTitle.isEmpty {
                         Text(windowTitle)
-                            .font(.system(size: 10.5))
+                            .font(.system(size: 10))
                             .foregroundStyle(.secondary)
                             .lineLimit(1)
                     }
                 }
 
-                Spacer()
+                Spacer(minLength: 8)
 
                 Menu {
                     Button("Snooze for 1 Hour", systemImage: "clock") {
@@ -71,49 +71,47 @@ struct BreadcrumbEditorView: View {
                         showDeleteConfirmation = true
                     }
                 } label: {
-                    Image(systemName: "ellipsis.circle")
-                        .font(.system(size: 14))
+                    Image(systemName: "ellipsis")
+                        .font(.system(size: 12, weight: .semibold))
+                        .frame(width: 20, height: 20)
                 }
                 .menuStyle(.borderlessButton)
                 .fixedSize()
 
                 Button(action: onClose) {
                     Image(systemName: "xmark")
-                        .font(.system(size: 11, weight: .semibold))
+                        .font(.system(size: 10.5, weight: .semibold))
+                        .frame(width: 20, height: 20)
                 }
                 .buttonStyle(.borderless)
                 .help("Close")
             }
-            .padding(.horizontal, 14)
-            .padding(.vertical, 11)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 9)
 
             Divider()
 
             TextEditor(text: $text)
                 .font(.system(size: 14))
                 .scrollContentBackground(.hidden)
-                .scrollIndicators(.automatic)
+                .scrollIndicators(.never)
                 .focused($isFocused)
-                .padding(.horizontal, 10)
-                .padding(.vertical, 8)
-                .frame(minHeight: 112, maxHeight: 156)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 7)
+                .frame(minHeight: 96, maxHeight: 126)
                 .background(Color(nsColor: .textBackgroundColor))
 
             Divider()
 
-            HStack(spacing: 10) {
+            HStack(spacing: 8) {
                 HStack(spacing: 3) {
                     Text("Left")
                     Text(createdAt, style: .relative)
                 }
-                .font(.system(size: 10.5))
+                .font(.system(size: 10))
                 .foregroundStyle(.secondary)
 
                 Spacer()
-
-                Text("⌘↩")
-                    .font(.system(size: 10, weight: .medium, design: .rounded))
-                    .foregroundStyle(.tertiary)
 
                 Button("Save") {
                     let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -124,10 +122,10 @@ struct BreadcrumbEditorView: View {
                 .buttonStyle(.borderedProminent)
                 .controlSize(.small)
             }
-            .padding(.horizontal, 14)
-            .padding(.vertical, 10)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
         }
-        .frame(width: 340)
+        .frame(width: 320)
         .background(Color(nsColor: .windowBackgroundColor))
         .confirmationDialog(
             "Delete this breadcrumb permanently?",
