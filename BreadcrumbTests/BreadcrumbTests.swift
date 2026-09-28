@@ -415,4 +415,35 @@ final class BreadcrumbTests: XCTestCase {
         XCTAssertEqual(point.x, frame.maxX, accuracy: 0.0001)
         XCTAssertEqual(point.y, frame.minY, accuracy: 0.0001)
     }
+    func testPersistedAnchorIsSanitizedIntoWindowBounds() {
+        let frame = CGRect(x: 100, y: 200, width: 600, height: 400)
+        let context = ContextSnapshot(
+            bundleIdentifier: "com.test.app",
+            applicationName: "Test",
+            windowTitle: "Document",
+            windowFrame: frame
+        )
+
+        var record = BreadcrumbRecord(
+            text: "Sanitize me",
+            context: context,
+            anchorPoint: CGPoint(x: 300, y: 300)
+        )
+
+        record.relativeX = 4.2
+        record.relativeY = -3.0
+
+        let point = record.anchorPoint(in: frame)
+
+        XCTAssertEqual(point.x, frame.maxX, accuracy: 0.0001)
+        XCTAssertEqual(point.y, frame.minY, accuracy: 0.0001)
+
+        record.relativeX = .nan
+        record.relativeY = .infinity
+
+        let fallbackPoint = record.anchorPoint(in: frame)
+
+        XCTAssertEqual(fallbackPoint.x, frame.midX, accuracy: 0.0001)
+        XCTAssertEqual(fallbackPoint.y, frame.midY, accuracy: 0.0001)
+    }
 }
