@@ -90,18 +90,25 @@ final class ContextObserver {
     }
 
     private func logSnapshotIfChanged(_ snapshot: ContextSnapshot) {
-        let fingerprint = [
+        let tabIndex = snapshot.selectedTabIndex.map(String.init) ?? "-1"
+        let processID = snapshot.processIdentifier.map(String.init) ?? "-1"
+        let windowNumber = snapshot.windowNumber.map(String.init) ?? "-1"
+        let minimized = snapshot.isMinimized ? "true" : "false"
+        let frame = NSStringFromRect(snapshot.windowFrame ?? .zero)
+
+        let fingerprintParts: [String] = [
             snapshot.bundleIdentifier,
             snapshot.windowTitle ?? "",
             snapshot.documentURL ?? "",
             snapshot.selectedTabTitle ?? "",
-            String(snapshot.selectedTabIndex ?? -1),
-            String(snapshot.processIdentifier ?? -1),
-            String(snapshot.windowNumber ?? -1),
-            String(snapshot.isMinimized),
+            tabIndex,
+            processID,
+            windowNumber,
+            minimized,
             snapshot.displayIdentifier ?? "",
-            NSStringFromRect(snapshot.windowFrame ?? .zero)
-        ].joined(separator: "|")
+            frame
+        ]
+        let fingerprint = fingerprintParts.joined(separator: "|")
 
         guard fingerprint != lastFingerprint else { return }
         lastFingerprint = fingerprint
@@ -397,8 +404,10 @@ final class ContextObserver {
             guard let ownerPID = item[kCGWindowOwnerPID as String] as? Int,
                   ownerPID == Int(processIdentifier),
                   let number = item[kCGWindowNumber as String] as? Int,
-                  let boundsDict = item[kCGWindowBounds as String] as? CFDictionary,
-                  let cgFrame = CGRect(dictionaryRepresentation: boundsDict) else {
+                  let boundsObject = item[kCGWindowBounds as String] as? NSDictionary,
+                  let cgFrame = CGRect(
+                    dictionaryRepresentation: boundsObject as CFDictionary
+                  ) else {
                 return nil
             }
 
