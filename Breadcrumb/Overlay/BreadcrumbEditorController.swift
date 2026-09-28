@@ -39,7 +39,9 @@ final class BreadcrumbEditorController {
         panel.isOpaque = false
         panel.backgroundColor = .clear
         panel.hasShadow = true
-        panel.level = .floating
+        panel.level = NSWindow.Level(
+            rawValue: NSWindow.Level.floating.rawValue + 2
+        )
         panel.collectionBehavior = [.moveToActiveSpace, .fullScreenAuxiliary]
         panel.hidesOnDeactivate = false
         panel.becomesKeyOnlyIfNeeded = false
