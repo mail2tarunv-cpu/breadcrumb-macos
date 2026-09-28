@@ -20,7 +20,7 @@ final class BreadcrumbEditorController {
     ) {
         dismiss()
 
-        let size = NSSize(width: 340, height: 228)
+        let size = NSSize(width: 320, height: 190)
         let preferred = NSPoint(
             x: anchorPoint.x + 12,
             y: anchorPoint.y - size.height / 2
@@ -30,19 +30,13 @@ final class BreadcrumbEditorController {
 
         let panel = BreadcrumbEditorPanel(
             contentRect: NSRect(origin: origin, size: size),
-            styleMask: [.titled, .fullSizeContentView, .nonactivatingPanel],
+            styleMask: [.borderless, .nonactivatingPanel],
             backing: .buffered,
             defer: false
         )
 
-        panel.titleVisibility = .hidden
-        panel.titlebarAppearsTransparent = true
-        panel.titlebarSeparatorStyle = .none
-        panel.standardWindowButton(.closeButton)?.isHidden = true
-        panel.standardWindowButton(.miniaturizeButton)?.isHidden = true
-        panel.standardWindowButton(.zoomButton)?.isHidden = true
-        panel.isOpaque = true
-        panel.backgroundColor = .windowBackgroundColor
+        panel.isOpaque = false
+        panel.backgroundColor = .clear
         panel.hasShadow = true
         panel.level = .floating
         panel.collectionBehavior = [.moveToActiveSpace, .fullScreenAuxiliary]
