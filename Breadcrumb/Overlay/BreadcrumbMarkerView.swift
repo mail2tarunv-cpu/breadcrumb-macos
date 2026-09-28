@@ -7,56 +7,40 @@ struct BreadcrumbMarkerView: View {
     @State private var isHovering = false
 
     var body: some View {
-        HStack(spacing: 9) {
-            ZStack {
-                Circle()
-                    .fill(.primary.opacity(isHovering ? 0.12 : 0.08))
-                    .frame(width: 22, height: 22)
+        HStack(spacing: 7) {
+            Circle()
+                .fill(.secondary.opacity(isHovering ? 0.75 : 0.52))
+                .frame(width: 7, height: 7)
 
-                Circle()
-                    .fill(.primary.opacity(0.82))
-                    .frame(width: 7, height: 7)
-                    .shadow(radius: isHovering ? 2 : 0)
-            }
+            Text(text)
+                .font(.system(size: 12, weight: .medium))
+                .lineLimit(1)
+                .truncationMode(.tail)
 
-            VStack(alignment: .leading, spacing: 1) {
-                Text(text)
-                    .font(.system(size: 12.5, weight: .medium))
+            Spacer(minLength: 3)
+
+            if isHovering {
+                Text(applicationName)
+                    .font(.system(size: 9.5, weight: .medium))
+                    .foregroundStyle(.tertiary)
                     .lineLimit(1)
-                    .truncationMode(.tail)
-
-                if isHovering {
-                    Text(applicationName)
-                        .font(.system(size: 9.5, weight: .medium))
-                        .foregroundStyle(.tertiary)
-                        .lineLimit(1)
-                        .transition(.opacity)
-                }
+                    .transition(.opacity)
             }
-
-            Spacer(minLength: 0)
-
-            Image(systemName: "chevron.right")
-                .font(.system(size: 8, weight: .bold))
-                .foregroundStyle(.quaternary)
-                .opacity(isHovering ? 1 : 0)
         }
-        .padding(.horizontal, 9)
-        .frame(width: 176, height: 40)
-        .background(.ultraThinMaterial)
-        .clipShape(RoundedRectangle(cornerRadius: 13, style: .continuous))
+        .padding(.horizontal, 10)
+        .frame(width: 164, height: 34)
+        .background(.regularMaterial)
+        .clipShape(Capsule())
         .overlay {
-            RoundedRectangle(cornerRadius: 13, style: .continuous)
-                .stroke(.primary.opacity(isHovering ? 0.16 : 0.09), lineWidth: 0.7)
+            Capsule()
+                .stroke(.primary.opacity(isHovering ? 0.13 : 0.07), lineWidth: 0.5)
         }
-        .shadow(radius: isHovering ? 14 : 9, y: isHovering ? 6 : 4)
-        .scaleEffect(isHovering ? 1.02 : 1)
-        .animation(.easeOut(duration: 0.14), value: isHovering)
-        .onHover { hovering in
-            isHovering = hovering
-        }
+        .shadow(radius: isHovering ? 8 : 5, y: 3)
+        .scaleEffect(isHovering ? 1.015 : 1)
+        .animation(.easeOut(duration: 0.12), value: isHovering)
+        .onHover { isHovering = $0 }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("Breadcrumb: " + text)
-        .accessibilityHint("Click to open. Drag to reposition.")
+        .accessibilityHint("Click to edit. Drag to reposition.")
     }
 }
