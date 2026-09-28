@@ -61,7 +61,8 @@ struct ComposerView: View {
             }
         }
         .padding(14)
-        .frame(width: 420, minHeight: contextAvailable ? 108 : 112)
+        .frame(width: 420)
+        .frame(minHeight: contextAvailable ? 108 : 112)
         .background(.ultraThinMaterial)
         .clipShape(RoundedRectangle(cornerRadius: 17, style: .continuous))
         .overlay {
