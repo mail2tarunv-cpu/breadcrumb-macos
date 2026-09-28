@@ -37,16 +37,11 @@ struct BreadcrumbEditorView: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            HStack(spacing: 8) {
-                ZStack {
-                    Circle()
-                        .fill(.primary.opacity(0.08))
-                        .frame(width: 25, height: 25)
-                    Circle()
-                        .fill(.primary.opacity(0.78))
-                        .frame(width: 7, height: 7)
-                }
+        VStack(spacing: 0) {
+            HStack(spacing: 10) {
+                Image(systemName: "circle.dotted")
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundStyle(.secondary)
 
                 VStack(alignment: .leading, spacing: 1) {
                     Text(applicationName)
@@ -54,42 +49,11 @@ struct BreadcrumbEditorView: View {
 
                     if let windowTitle, !windowTitle.isEmpty {
                         Text(windowTitle)
-                            .font(.system(size: 10))
-                            .foregroundStyle(.tertiary)
+                            .font(.system(size: 10.5))
+                            .foregroundStyle(.secondary)
                             .lineLimit(1)
                     }
                 }
-
-                Spacer()
-
-                Button(action: onClose) {
-                    Image(systemName: "xmark")
-                        .font(.system(size: 10, weight: .bold))
-                        .frame(width: 24, height: 24)
-                        .background(.quaternary.opacity(0.6))
-                        .clipShape(Circle())
-                }
-                .buttonStyle(.plain)
-                .foregroundStyle(.secondary)
-            }
-
-            TextEditor(text: $text)
-                .font(.system(size: 15))
-                .scrollContentBackground(.hidden)
-                .scrollIndicators(.hidden)
-                .frame(minHeight: 118, maxHeight: 190)
-                .focused($isFocused)
-                .padding(9)
-                .background(.primary.opacity(0.035))
-                .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-
-            HStack {
-                HStack(spacing: 3) {
-                    Text("Left")
-                    Text(createdAt, style: .relative)
-                }
-                .font(.system(size: 10.5))
-                .foregroundStyle(.tertiary)
 
                 Spacer()
 
@@ -107,11 +71,49 @@ struct BreadcrumbEditorView: View {
                         showDeleteConfirmation = true
                     }
                 } label: {
-                    Image(systemName: "ellipsis")
-                        .frame(width: 26, height: 22)
+                    Image(systemName: "ellipsis.circle")
+                        .font(.system(size: 14))
                 }
                 .menuStyle(.borderlessButton)
                 .fixedSize()
+
+                Button(action: onClose) {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 11, weight: .semibold))
+                }
+                .buttonStyle(.borderless)
+                .help("Close")
+            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 11)
+
+            Divider()
+
+            TextEditor(text: $text)
+                .font(.system(size: 14))
+                .scrollContentBackground(.hidden)
+                .scrollIndicators(.automatic)
+                .focused($isFocused)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 8)
+                .frame(minHeight: 112, maxHeight: 156)
+                .background(Color(nsColor: .textBackgroundColor))
+
+            Divider()
+
+            HStack(spacing: 10) {
+                HStack(spacing: 3) {
+                    Text("Left")
+                    Text(createdAt, style: .relative)
+                }
+                .font(.system(size: 10.5))
+                .foregroundStyle(.secondary)
+
+                Spacer()
+
+                Text("⌘↩")
+                    .font(.system(size: 10, weight: .medium, design: .rounded))
+                    .foregroundStyle(.tertiary)
 
                 Button("Save") {
                     let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -122,15 +124,11 @@ struct BreadcrumbEditorView: View {
                 .buttonStyle(.borderedProminent)
                 .controlSize(.small)
             }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 10)
         }
-        .padding(16)
-        .frame(width: 360)
-        .background(.ultraThinMaterial)
-        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
-        .overlay {
-            RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .stroke(.primary.opacity(0.09), lineWidth: 0.7)
-        }
+        .frame(width: 340)
+        .background(Color(nsColor: .windowBackgroundColor))
         .confirmationDialog(
             "Delete this breadcrumb permanently?",
             isPresented: $showDeleteConfirmation,
