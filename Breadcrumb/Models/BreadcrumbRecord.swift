@@ -21,6 +21,7 @@ struct BreadcrumbRecord: Codable, Identifiable, Equatable {
     var updatedAt: Date
     var isArchived: Bool
     var snoozedUntil: Date?
+    var colorName: String?
 
     init(
         id: UUID = UUID(),
@@ -46,6 +47,7 @@ struct BreadcrumbRecord: Codable, Identifiable, Equatable {
         self.updatedAt = Date()
         self.isArchived = false
         self.snoozedUntil = nil
+        self.colorName = BreadcrumbColor.lavender.rawValue
 
         if let frame = context.windowFrame, frame.width > 0, frame.height > 0 {
             self.relativeX = min(max((anchorPoint.x - frame.minX) / frame.width, 0), 1)
@@ -54,6 +56,11 @@ struct BreadcrumbRecord: Codable, Identifiable, Equatable {
             self.relativeX = 0.5
             self.relativeY = 0.5
         }
+    }
+
+    var breadcrumbColor: BreadcrumbColor {
+        get { BreadcrumbColor(rawValue: colorName ?? "") ?? .lavender }
+        set { colorName = newValue.rawValue }
     }
 
     var isSnoozed: Bool {
