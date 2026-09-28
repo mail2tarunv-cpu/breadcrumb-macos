@@ -8,6 +8,8 @@ struct BreadcrumbEditorView: View {
     let applicationName: String
     let windowTitle: String?
     let createdAt: Date
+    let breadcrumbColor: BreadcrumbColor
+    let onColorChange: (BreadcrumbColor) -> Void
     let onSave: (String) -> Void
     let onArchive: () -> Void
     let onDelete: () -> Void
@@ -19,6 +21,8 @@ struct BreadcrumbEditorView: View {
         applicationName: String,
         windowTitle: String?,
         createdAt: Date,
+        breadcrumbColor: BreadcrumbColor,
+        onColorChange: @escaping (BreadcrumbColor) -> Void,
         onSave: @escaping (String) -> Void,
         onArchive: @escaping () -> Void,
         onDelete: @escaping () -> Void,
@@ -29,6 +33,8 @@ struct BreadcrumbEditorView: View {
         self.applicationName = applicationName
         self.windowTitle = windowTitle
         self.createdAt = createdAt
+        self.breadcrumbColor = breadcrumbColor
+        self.onColorChange = onColorChange
         self.onSave = onSave
         self.onArchive = onArchive
         self.onDelete = onDelete
@@ -39,9 +45,27 @@ struct BreadcrumbEditorView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack(spacing: 8) {
-                Circle()
-                    .fill(.secondary.opacity(0.5))
-                    .frame(width: 7, height: 7)
+                Menu {
+                    ForEach(BreadcrumbColor.allCases) { color in
+                        Button {
+                            onColorChange(color)
+                        } label: {
+                            Label {
+                                Text(color.name)
+                            } icon: {
+                                Image(systemName: breadcrumbColor == color ? "checkmark.circle.fill" : "circle.fill")
+                            }
+                        }
+                    }
+                } label: {
+                    Circle()
+                        .fill(breadcrumbColor.color)
+                        .frame(width: 9, height: 9)
+                        .contentShape(Circle())
+                }
+                .menuStyle(.borderlessButton)
+                .fixedSize()
+                .help("Change breadcrumb color")
 
                 VStack(alignment: .leading, spacing: 0) {
                     Text(applicationName)
