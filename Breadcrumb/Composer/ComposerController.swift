@@ -96,6 +96,9 @@ final class ComposerController {
             },
             onCancel: { [weak self] in
                 self?.dismiss()
+            },
+            onHeightChange: { [weak self] editorHeight in
+                self?.resizePanel(forEditorHeight: editorHeight)
             }
         )
 
@@ -109,6 +112,22 @@ final class ComposerController {
     func dismiss() {
         panel?.orderOut(nil)
         panel = nil
+    }
+
+    private func resizePanel(forEditorHeight editorHeight: CGFloat) {
+        guard let panel else { return }
+
+        let baseEditorHeight: CGFloat = 24
+        let basePanelHeight: CGFloat = 92
+        let targetHeight = basePanelHeight + max(editorHeight - baseEditorHeight, 0)
+
+        guard abs(panel.frame.height - targetHeight) > 0.5 else { return }
+
+        let currentTop = panel.frame.maxY
+        var nextFrame = panel.frame
+        nextFrame.size.height = targetHeight
+        nextFrame.origin.y = currentTop - targetHeight
+        panel.setFrame(nextFrame, display: true, animate: false)
     }
 
     private func constrainedOrigin(
