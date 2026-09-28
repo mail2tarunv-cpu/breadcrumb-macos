@@ -26,11 +26,7 @@ targets:
         INFOPLIST_KEY_CFBundleDisplayName: Breadcrumb
         CODE_SIGN_STYLE: Automatic
         ENABLE_HARDENED_RUNTIME: YES
-        ENABLE_APP_SANDBOX: YES
-    entitlements:
-      path: Breadcrumb/Breadcrumb.entitlements
-      properties:
-        com.apple.security.app-sandbox: true
+        ENABLE_APP_SANDBOX: NO
 
   BreadcrumbTests:
     type: bundle.unit-test
