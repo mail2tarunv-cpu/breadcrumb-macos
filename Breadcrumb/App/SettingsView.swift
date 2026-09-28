@@ -6,6 +6,7 @@ struct SettingsView: View {
     @State private var launchError: String?
     @AppStorage("breadcrumb.resume.autoEnabled") private var autoResumeEnabled = true
     @AppStorage("breadcrumb.resume.cooldownMinutes") private var autoResumeCooldownMinutes = 15.0
+    @AppStorage("breadcrumb.capture.shortcut") private var captureShortcutRaw = CaptureShortcut.optionSpace.rawValue
 
     let onOpenLibrary: () -> Void
     let onOpenDiagnostics: () -> Void
@@ -31,13 +32,24 @@ struct SettingsView: View {
     private var general: some View {
         Form {
             Section("Capture") {
-                LabeledContent("New breadcrumb") {
-                    Text("⌥ Space")
-                        .font(.system(size: 11.5, weight: .semibold, design: .rounded))
-                        .foregroundStyle(.secondary)
+                Picker("New breadcrumb", selection: Binding(
+                    get: {
+                        CaptureShortcut(rawValue: captureShortcutRaw) ?? .optionSpace
+                    },
+                    set: { shortcut in
+                        captureShortcutRaw = shortcut.rawValue
+                        NotificationCenter.default.post(
+                            name: HotKeyManager.shortcutDidChange,
+                            object: nil
+                        )
+                    }
+                )) {
+                    ForEach(CaptureShortcut.allCases) { shortcut in
+                        Text(shortcut.title).tag(shortcut)
+                    }
                 }
 
-                Text("Opens the capture palette beside your pointer and attaches the thought to the current window or tab.")
+                Text("The shortcut works globally and opens the capture palette beside your pointer.")
                     .font(.system(size: 11))
                     .foregroundStyle(.secondary)
             }
@@ -147,7 +159,7 @@ struct SettingsView: View {
 
             Section("About") {
                 LabeledContent("Breadcrumb") {
-                    Text("Version 1.4")
+                    Text(Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "1.0")
                         .foregroundStyle(.secondary)
                 }
             }
