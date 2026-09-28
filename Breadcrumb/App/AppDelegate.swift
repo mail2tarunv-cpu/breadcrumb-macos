@@ -26,6 +26,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         onDelete: { [weak self] id in
             self?.overlayManager.delete(id)
             self?.rebuildMenu()
+        },
+        onSnooze: { [weak self] id, date in
+            self?.overlayManager.snooze(id, until: date)
+            self?.rebuildMenu()
+        },
+        onWake: { [weak self] id in
+            self?.overlayManager.wake(id)
+            self?.rebuildMenu()
         }
     )
 
