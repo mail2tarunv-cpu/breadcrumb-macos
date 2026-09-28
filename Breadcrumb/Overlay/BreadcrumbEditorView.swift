@@ -3,7 +3,7 @@ import SwiftUI
 struct BreadcrumbEditorView: View {
     @State private var text: String
     @FocusState private var isFocused: Bool
-    @State private var showDeleteConfirmation = false
+    @State private var isConfirmingDelete = false
 
     let applicationName: String
     let windowTitle: String?
@@ -40,7 +40,7 @@ struct BreadcrumbEditorView: View {
         VStack(alignment: .leading, spacing: 0) {
             HStack(spacing: 8) {
                 Circle()
-                    .fill(.secondary.opacity(0.55))
+                    .fill(.secondary.opacity(0.5))
                     .frame(width: 7, height: 7)
 
                 VStack(alignment: .leading, spacing: 0) {
@@ -67,8 +67,10 @@ struct BreadcrumbEditorView: View {
                     Divider()
                     Button("Archive", systemImage: "archivebox", action: onArchive)
                     Divider()
-                    Button("Delete Permanently", systemImage: "trash", role: .destructive) {
-                        showDeleteConfirmation = true
+                    Button("Delete…", systemImage: "trash", role: .destructive) {
+                        withAnimation(.easeOut(duration: 0.12)) {
+                            isConfirmingDelete = true
+                        }
                     }
                 } label: {
                     Image(systemName: "ellipsis")
@@ -89,8 +91,8 @@ struct BreadcrumbEditorView: View {
                 .help("Close")
             }
             .padding(.horizontal, 13)
-            .padding(.top, 11)
-            .padding(.bottom, 5)
+            .padding(.top, 10)
+            .padding(.bottom, 4)
 
             TextEditor(text: $text)
                 .font(.system(size: 14.5))
@@ -98,55 +100,73 @@ struct BreadcrumbEditorView: View {
                 .scrollIndicators(.never)
                 .focused($isFocused)
                 .padding(.horizontal, 8)
-                .padding(.vertical, 4)
-                .frame(minHeight: 82, maxHeight: 112)
+                .padding(.vertical, 3)
+                .frame(minHeight: 76, maxHeight: 108)
                 .background(.clear)
 
-            HStack(spacing: 8) {
-                HStack(spacing: 3) {
-                    Text("Left")
-                    Text(createdAt, style: .relative)
+            if isConfirmingDelete {
+                HStack(spacing: 8) {
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text("Delete breadcrumb?")
+                            .font(.system(size: 11.5, weight: .semibold))
+                        Text("This can’t be undone.")
+                            .font(.system(size: 10))
+                            .foregroundStyle(.secondary)
+                    }
+
+                    Spacer()
+
+                    Button("Cancel") {
+                        withAnimation(.easeOut(duration: 0.12)) {
+                            isConfirmingDelete = false
+                        }
+                    }
+                    .controlSize(.small)
+
+                    Button("Delete", role: .destructive, action: onDelete)
+                        .controlSize(.small)
                 }
-                .font(.system(size: 10))
-                .foregroundStyle(.tertiary)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
+                .background(.primary.opacity(0.035))
+                .transition(.opacity.combined(with: .move(edge: .bottom)))
+            } else {
+                HStack(spacing: 8) {
+                    HStack(spacing: 3) {
+                        Text("Left")
+                        Text(createdAt, style: .relative)
+                    }
+                    .font(.system(size: 10))
+                    .foregroundStyle(.tertiary)
 
-                Spacer()
+                    Spacer()
 
-                Text("⌘↩")
-                    .font(.system(size: 9.5, weight: .medium, design: .rounded))
-                    .foregroundStyle(.quaternary)
+                    Text("⌘↩")
+                        .font(.system(size: 9.5, weight: .medium, design: .rounded))
+                        .foregroundStyle(.quaternary)
 
-                Button("Save") {
-                    let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
-                    guard !trimmed.isEmpty else { return }
-                    onSave(trimmed)
+                    Button("Save") {
+                        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+                        guard !trimmed.isEmpty else { return }
+                        onSave(trimmed)
+                    }
+                    .keyboardShortcut(.return, modifiers: [.command])
+                    .buttonStyle(.borderedProminent)
+                    .controlSize(.small)
                 }
-                .keyboardShortcut(.return, modifiers: [.command])
-                .buttonStyle(.borderedProminent)
-                .controlSize(.small)
+                .padding(.horizontal, 13)
+                .padding(.top, 2)
+                .padding(.bottom, 9)
             }
-            .padding(.horizontal, 13)
-            .padding(.top, 3)
-            .padding(.bottom, 10)
         }
-        .frame(width: 318)
+        .frame(width: 316)
         .background(.regularMaterial)
-        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: 13, style: .continuous))
         .overlay {
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .stroke(.primary.opacity(0.09), lineWidth: 0.5)
+            RoundedRectangle(cornerRadius: 13, style: .continuous)
+                .stroke(.primary.opacity(0.08), lineWidth: 0.5)
         }
-        .shadow(radius: 18, y: 8)
-        .confirmationDialog(
-            "Delete this breadcrumb permanently?",
-            isPresented: $showDeleteConfirmation,
-            titleVisibility: .visible
-        ) {
-            Button("Delete Permanently", role: .destructive, action: onDelete)
-            Button("Cancel", role: .cancel) {}
-        } message: {
-            Text("This cannot be undone.")
-        }
+        .shadow(radius: 16, y: 7)
         .onAppear {
             DispatchQueue.main.async { isFocused = true }
         }
