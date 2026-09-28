@@ -7,18 +7,18 @@ struct HistoryView: View {
     let records: [BreadcrumbRecord]
     let onRestore: (UUID) -> Void
     let onArchive: (UUID) -> Void
+    let onDelete: (UUID) -> Void
 
     private var filteredRecords: [BreadcrumbRecord] {
         var source = records
 
-        if selectedFilter == "Active" {
-            source = source.filter { !$0.isArchived }
-        } else if selectedFilter == "Archived" {
-            source = source.filter { $0.isArchived }
+        switch selectedFilter {
+        case "Active": source = source.filter { !$0.isArchived }
+        case "Archived": source = source.filter { $0.isArchived }
+        default: break
         }
 
         let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
-
         if !query.isEmpty {
             source = source.filter {
                 $0.text.localizedCaseInsensitiveContains(query)
@@ -32,125 +32,119 @@ struct HistoryView: View {
         return source.sorted { $0.updatedAt > $1.updatedAt }
     }
 
+    private var activeCount: Int { records.filter { !$0.isArchived }.count }
+
     var body: some View {
         VStack(spacing: 0) {
-            HStack {
-                VStack(alignment: .leading, spacing: 3) {
-                    Text("Breadcrumbs")
-                        .font(.system(size: 22, weight: .semibold))
-
-                    Text("\(records.filter { !$0.isArchived }.count) active · \(records.filter { $0.isArchived }.count) archived")
-                        .font(.system(size: 12))
-                        .foregroundStyle(.secondary)
-                }
-
-                Spacer()
-
-                Picker("Filter", selection: $selectedFilter) {
-                    Text("All").tag("All")
-                    Text("Active").tag("Active")
-                    Text("Archived").tag("Archived")
-                }
-                .pickerStyle(.segmented)
-                .frame(width: 220)
-            }
-            .padding(20)
-
+            header
             Divider()
 
             if filteredRecords.isEmpty {
-                ContentUnavailableView(
-                    "No Breadcrumbs",
-                    systemImage: "circle.dotted",
-                    description: Text("Press ⌥ Space inside a supported window to leave one.")
-                )
+                ContentUnavailableView {
+                    Label("Nothing here yet", systemImage: "circle.dotted")
+                } description: {
+                    Text(searchText.isEmpty
+                         ? "Press ⌥ Space in any window to leave your first breadcrumb."
+                         : "No breadcrumbs match your search.")
+                }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
-                List {
-                    ForEach(filteredRecords) { record in
-                        HistoryRow(
-                            record: record,
-                            onRestore: { onRestore(record.id) },
-                            onArchive: { onArchive(record.id) }
-                        )
+                ScrollView {
+                    LazyVStack(spacing: 10) {
+                        ForEach(filteredRecords) { record in
+                            HistoryCard(
+                                record: record,
+                                onRestore: { onRestore(record.id) },
+                                onArchive: { onArchive(record.id) },
+                                onDelete: { onDelete(record.id) }
+                            )
+                        }
                     }
+                    .padding(18)
                 }
-                .listStyle(.inset)
+                .background(.primary.opacity(0.015))
             }
         }
-        .searchable(
-            text: $searchText,
-            placement: .toolbar,
-            prompt: "Search text, app, tab, title, or URL"
-        )
-        .frame(minWidth: 720, minHeight: 560)
+        .searchable(text: $searchText, placement: .toolbar, prompt: "Search breadcrumbs")
+        .frame(minWidth: 760, minHeight: 600)
+    }
+
+    private var header: some View {
+        HStack(spacing: 16) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Breadcrumbs")
+                    .font(.system(size: 26, weight: .semibold))
+
+                Text(activeCount == 1 ? "1 thought waiting for you" : "\(activeCount) thoughts waiting for you")
+                    .font(.system(size: 12.5))
+                    .foregroundStyle(.secondary)
+            }
+
+            Spacer()
+
+            Picker("Filter", selection: $selectedFilter) {
+                Text("All").tag("All")
+                Text("Active").tag("Active")
+                Text("Archived").tag("Archived")
+            }
+            .pickerStyle(.segmented)
+            .frame(width: 240)
+        }
+        .padding(.horizontal, 22)
+        .padding(.vertical, 18)
     }
 }
 
-private struct HistoryRow: View {
+private struct HistoryCard: View {
     let record: BreadcrumbRecord
     let onRestore: () -> Void
     let onArchive: () -> Void
+    let onDelete: () -> Void
 
     @State private var isExpanded = false
+    @State private var isHovering = false
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 12) {
             HStack(alignment: .top, spacing: 12) {
-                Image(systemName: record.isArchived ? "archivebox" : "circle.dotted")
-                    .frame(width: 20)
-                    .foregroundStyle(record.isArchived ? .tertiary : .secondary)
+                ZStack {
+                    RoundedRectangle(cornerRadius: 9, style: .continuous)
+                        .fill(.primary.opacity(0.055))
+                        .frame(width: 34, height: 34)
+
+                    Image(systemName: record.isArchived ? "archivebox" : "circle.dotted")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundStyle(.secondary)
+                }
 
                 VStack(alignment: .leading, spacing: 5) {
-                    HStack(spacing: 7) {
-                        Text(record.text)
-                            .font(.system(size: 14, weight: .medium))
-                            .lineLimit(isExpanded ? nil : 2)
-
-                        if record.isLegacyContext {
-                            Text("Legacy context")
-                                .font(.system(size: 9, weight: .semibold))
-                                .foregroundStyle(.secondary)
-                                .padding(.horizontal, 6)
-                                .padding(.vertical, 2)
-                                .background(.quaternary)
-                                .clipShape(Capsule())
-                        }
-                    }
+                    Text(record.text)
+                        .font(.system(size: 14.5, weight: .medium))
+                        .lineLimit(isExpanded ? nil : 3)
+                        .textSelection(.enabled)
 
                     HStack(spacing: 5) {
                         Text(record.applicationName)
+                            .fontWeight(.medium)
 
-                        if let tabTitle = record.selectedTabTitle, !tabTitle.isEmpty {
+                        if let context = visibleContext {
                             Text("·")
-                            Text(tabTitle)
-                                .lineLimit(1)
-                        } else if let title = record.windowTitle, !title.isEmpty {
-                            Text("·")
-                            Text(title)
-                                .lineLimit(1)
+                            Text(context).lineLimit(1)
                         }
 
                         Text("·")
                         Text(record.updatedAt, style: .relative)
                     }
-                    .font(.system(size: 11))
+                    .font(.system(size: 10.5))
                     .foregroundStyle(.secondary)
                 }
 
-                Spacer()
-
-                Button {
-                    isExpanded.toggle()
-                } label: {
-                    Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
-                }
-                .buttonStyle(.borderless)
-                .help(isExpanded ? "Hide context details" : "Show context details")
+                Spacer(minLength: 12)
 
                 if record.isArchived {
                     Button("Restore", action: onRestore)
-                        .buttonStyle(.borderless)
+                        .buttonStyle(.bordered)
+                        .controlSize(.small)
                 } else {
                     Button {
                         onArchive()
@@ -160,40 +154,53 @@ private struct HistoryRow: View {
                     .buttonStyle(.borderless)
                     .help("Archive")
                 }
+
+                Menu {
+                    Button(isExpanded ? "Hide Context" : "Show Context") {
+                        isExpanded.toggle()
+                    }
+                    Divider()
+                    Button("Delete Permanently", systemImage: "trash", role: .destructive, action: onDelete)
+                } label: {
+                    Image(systemName: "ellipsis")
+                        .frame(width: 24, height: 24)
+                }
+                .menuStyle(.borderlessButton)
+                .fixedSize()
             }
 
             if isExpanded {
-                Grid(alignment: .leading, horizontalSpacing: 14, verticalSpacing: 5) {
+                Divider().opacity(0.65)
+
+                Grid(alignment: .leading, horizontalSpacing: 14, verticalSpacing: 6) {
                     contextRow("App", record.applicationName)
-                    contextRow("Bundle", record.bundleIdentifier)
                     contextRow("Window", record.windowTitle ?? "Unavailable")
                     contextRow("Document", record.documentURL ?? "Unavailable")
                     contextRow("Tab", record.selectedTabTitle ?? "Unavailable")
-                    contextRow(
-                        "Tab index",
-                        record.selectedTabIndex.map(String.init) ?? "Unavailable"
-                    )
-                    contextRow(
-                        "Window number",
-                        record.windowNumber.map(String.init) ?? "Unavailable"
-                    )
-                    contextRow("Display", record.displayIdentifier ?? "Unavailable")
-                    contextRow("Context version", record.contextVersion.map(String.init) ?? "Legacy")
-                    contextRow(
-                        "Anchor",
-                        String(
-                            format: "%.3f, %.3f",
-                            record.relativeX,
-                            record.relativeY
-                        )
-                    )
+                    contextRow("Created", record.createdAt.formatted(date: .abbreviated, time: .shortened))
+                    contextRow("Updated", record.updatedAt.formatted(date: .abbreviated, time: .shortened))
                 }
-                .font(.system(size: 11))
-                .padding(.leading, 32)
-                .padding(.bottom, 4)
+                .font(.system(size: 10.5))
+                .padding(.leading, 46)
             }
         }
-        .padding(.vertical, 7)
+        .padding(14)
+        .background(.regularMaterial)
+        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .stroke(.primary.opacity(isHovering ? 0.11 : 0.06), lineWidth: 0.7)
+        }
+        .shadow(radius: isHovering ? 8 : 0, y: 3)
+        .animation(.easeOut(duration: 0.15), value: isHovering)
+        .onHover { isHovering = $0 }
+        .opacity(record.isArchived ? 0.72 : 1)
+    }
+
+    private var visibleContext: String? {
+        if let tab = record.selectedTabTitle, !tab.isEmpty { return tab }
+        if let title = record.windowTitle, !title.isEmpty { return title }
+        return nil
     }
 
     @ViewBuilder
@@ -201,9 +208,11 @@ private struct HistoryRow: View {
         GridRow {
             Text(label)
                 .foregroundStyle(.tertiary)
+                .frame(width: 62, alignment: .leading)
             Text(value)
                 .foregroundStyle(.secondary)
                 .textSelection(.enabled)
+                .lineLimit(2)
         }
     }
 }
