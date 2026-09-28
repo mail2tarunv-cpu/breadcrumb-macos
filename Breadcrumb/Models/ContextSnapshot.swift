@@ -66,16 +66,35 @@ struct ContextSnapshot: Equatable {
         }
 
         if let savedDocument = normalized(record.documentURL) {
-            guard normalized(documentURL) == savedDocument else { return false }
+            if normalized(documentURL) == savedDocument {
+                if sameSession,
+                   let savedTabIndex = record.selectedTabIndex,
+                   let currentTabIndex = selectedTabIndex,
+                   savedTabIndex != currentTabIndex {
+                    return false
+                }
 
-            if sameSession,
-               let savedTabIndex = record.selectedTabIndex,
-               let currentTabIndex = selectedTabIndex,
-               savedTabIndex != currentTabIndex {
-                return false
+                return true
             }
 
-            return true
+            // Some apps expose a document URL inconsistently after either
+            // Breadcrumb or the target app relaunches. In a new process
+            // session, fall back to a strong exact title identity rather
+            // than permanently orphaning a persisted breadcrumb.
+            if !sameSession,
+               let savedTitle = normalized(record.windowTitle),
+               let currentTitle = normalized(windowTitle),
+               savedTitle == currentTitle {
+                if let savedTabTitle = normalized(record.selectedTabTitle),
+                   let currentTabTitle = normalized(selectedTabTitle),
+                   savedTabTitle != currentTabTitle {
+                    return false
+                }
+
+                return true
+            }
+
+            return false
         }
 
         guard let savedTitle = normalized(record.windowTitle),
@@ -83,8 +102,10 @@ struct ContextSnapshot: Equatable {
             return false
         }
 
-        if let savedTabTitle = normalized(record.selectedTabTitle) {
-            guard normalized(selectedTabTitle) == savedTabTitle else { return false }
+        if let savedTabTitle = normalized(record.selectedTabTitle),
+           let currentTabTitle = normalized(selectedTabTitle),
+           savedTabTitle != currentTabTitle {
+            return false
         }
 
         if sameSession,
