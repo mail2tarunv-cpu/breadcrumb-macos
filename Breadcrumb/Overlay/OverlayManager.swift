@@ -340,7 +340,7 @@ final class OverlayManager: NSObject {
             return
         }
 
-        let size = NSSize(width: 176, height: 40)
+        let size = NSSize(width: 164, height: 34)
         let fallbackPoint = record.anchorPoint(in: nil)
 
         let panel = NSPanel(
@@ -803,8 +803,8 @@ final class OverlayManager: NSObject {
             )
         }
 
-        let markerSize = CGSize(width: 176, height: 40)
-        let verticalStep: CGFloat = 46
+        let markerSize = CGSize(width: 164, height: 34)
+        let verticalStep: CGFloat = 40
         let horizontalPadding: CGFloat = 8
         let verticalPadding: CGFloat = 8
 
