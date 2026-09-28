@@ -475,4 +475,64 @@ final class BreadcrumbTests: XCTestCase {
         legacy.colorName = nil
         XCTAssertEqual(legacy.breadcrumbColor, .lavender)
     }
+    func testDoneStatePersistsThroughStore() throws {
+        let suiteName = "BreadcrumbTests.Done.\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suiteName)!
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+
+        let store = BreadcrumbStore(defaults: defaults)
+        let context = ContextSnapshot(
+            bundleIdentifier: "com.test.app",
+            applicationName: "Test",
+            windowTitle: "Project",
+            windowFrame: CGRect(x: 0, y: 0, width: 800, height: 600)
+        )
+
+        var record = BreadcrumbRecord(
+            text: "Finish this",
+            context: context,
+            anchorPoint: CGPoint(x: 300, y: 300)
+        )
+        record.completedAt = Date()
+
+        store.save([record])
+        let loaded = try XCTUnwrap(store.load().first)
+
+        XCTAssertTrue(loaded.isDone)
+        XCTAssertNotNil(loaded.completedAt)
+    }
+
+    func testContextGroupPrefersTabThenWindowThenHost() {
+        let frame = CGRect(x: 0, y: 0, width: 800, height: 600)
+
+        let tabContext = ContextSnapshot(
+            bundleIdentifier: "com.apple.Safari",
+            applicationName: "Safari",
+            windowTitle: "Window title",
+            windowFrame: frame,
+            documentURL: "https://example.com/path",
+            selectedTabTitle: "Project Alpha"
+        )
+
+        let tabRecord = BreadcrumbRecord(
+            text: "Tab",
+            context: tabContext,
+            anchorPoint: .zero
+        )
+        XCTAssertEqual(tabRecord.contextGroupName, "Project Alpha")
+
+        let windowContext = ContextSnapshot(
+            bundleIdentifier: "com.test.app",
+            applicationName: "Test",
+            windowTitle: "Design File",
+            windowFrame: frame
+        )
+
+        let windowRecord = BreadcrumbRecord(
+            text: "Window",
+            context: windowContext,
+            anchorPoint: .zero
+        )
+        XCTAssertEqual(windowRecord.contextGroupName, "Design File")
+    }
 }
