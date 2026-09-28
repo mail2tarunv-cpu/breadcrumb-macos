@@ -34,6 +34,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         onWake: { [weak self] id in
             self?.overlayManager.wake(id)
             self?.rebuildMenu()
+        },
+        onReopen: { [weak self] id in
+            self?.overlayManager.reopen(id)
+            self?.rebuildMenu()
         }
     )
 
@@ -141,7 +145,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             )
         )
 
-        let activeCount = overlayManager.allRecords.filter { !$0.isArchived && !$0.isSnoozed }.count
+        let activeCount = overlayManager.allRecords.filter { !$0.isArchived && !$0.isSnoozed && !$0.isDone }.count
         let libraryTitle = activeCount == 0
             ? "Open Library…"
             : "Open Library…  \(activeCount)"
