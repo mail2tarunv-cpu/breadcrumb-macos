@@ -26,12 +26,14 @@ final class BreadcrumbTests: XCTestCase {
         XCTAssertEqual(point.y, 280, accuracy: 0.0001)
     }
 
-    func testContextMatchingUsesBundleAndWindowTitle() {
+    func testContextMatchingUsesExactWindowTitleWithoutDocumentURL() {
+        let frame = CGRect(x: 10, y: 10, width: 800, height: 600)
+
         let context = ContextSnapshot(
             bundleIdentifier: "com.test.app",
             applicationName: "Test",
             windowTitle: "Document A",
-            windowFrame: nil
+            windowFrame: frame
         )
 
         let record = BreadcrumbRecord(
@@ -46,13 +48,13 @@ final class BreadcrumbTests: XCTestCase {
             bundleIdentifier: "com.test.app",
             applicationName: "Test",
             windowTitle: "Document B",
-            windowFrame: nil
+            windowFrame: frame
         )
 
         XCTAssertFalse(differentWindow.matches(record))
     }
 
-    func testContextFallsBackToAppWhenWindowTitleUnavailable() {
+    func testContextDoesNotFallBackToAppOnly() {
         let context = ContextSnapshot(
             bundleIdentifier: "com.test.app",
             applicationName: "Test",
@@ -66,14 +68,109 @@ final class BreadcrumbTests: XCTestCase {
             anchorPoint: .zero
         )
 
-        let anotherUntitledContext = ContextSnapshot(
-            bundleIdentifier: "com.test.app",
-            applicationName: "Test",
-            windowTitle: nil,
-            windowFrame: nil
+        XCTAssertFalse(context.hasStableIdentity)
+        XCTAssertFalse(record.hasStableContext)
+        XCTAssertFalse(context.matches(record))
+    }
+
+    func testBrowserDocumentURLSeparatesTabs() {
+        let frame = CGRect(x: 0, y: 0, width: 1200, height: 800)
+
+        let firstTab = ContextSnapshot(
+            bundleIdentifier: "com.apple.Safari",
+            applicationName: "Safari",
+            windowTitle: "Example",
+            windowFrame: frame,
+            processIdentifier: 100,
+            windowNumber: 10,
+            documentURL: "https://example.com/one",
+            selectedTabTitle: "One",
+            selectedTabIndex: 0
         )
 
-        XCTAssertTrue(anotherUntitledContext.matches(record))
+        let record = BreadcrumbRecord(
+            text: "Only on tab one",
+            context: firstTab,
+            anchorPoint: CGPoint(x: 400, y: 300)
+        )
+
+        let secondTab = ContextSnapshot(
+            bundleIdentifier: "com.apple.Safari",
+            applicationName: "Safari",
+            windowTitle: "Example",
+            windowFrame: frame,
+            processIdentifier: 100,
+            windowNumber: 10,
+            documentURL: "https://example.com/two",
+            selectedTabTitle: "Two",
+            selectedTabIndex: 1
+        )
+
+        XCTAssertTrue(firstTab.matches(record))
+        XCTAssertFalse(secondTab.matches(record))
+    }
+
+    func testSameURLDuplicateTabsUseTabIndexWithinSession() {
+        let frame = CGRect(x: 0, y: 0, width: 1200, height: 800)
+
+        let firstTab = ContextSnapshot(
+            bundleIdentifier: "com.apple.Safari",
+            applicationName: "Safari",
+            windowTitle: "Same page",
+            windowFrame: frame,
+            processIdentifier: 100,
+            windowNumber: 10,
+            documentURL: "https://example.com",
+            selectedTabTitle: "Same page",
+            selectedTabIndex: 0
+        )
+
+        let record = BreadcrumbRecord(
+            text: "Tab zero",
+            context: firstTab,
+            anchorPoint: .zero
+        )
+
+        let duplicateTab = ContextSnapshot(
+            bundleIdentifier: "com.apple.Safari",
+            applicationName: "Safari",
+            windowTitle: "Same page",
+            windowFrame: frame,
+            processIdentifier: 100,
+            windowNumber: 10,
+            documentURL: "https://example.com",
+            selectedTabTitle: "Same page",
+            selectedTabIndex: 1
+        )
+
+        XCTAssertFalse(duplicateTab.matches(record))
+    }
+
+    func testMinimizedContextNeverMatches() {
+        let frame = CGRect(x: 0, y: 0, width: 900, height: 600)
+
+        let context = ContextSnapshot(
+            bundleIdentifier: "com.test.app",
+            applicationName: "Test",
+            windowTitle: "Document",
+            windowFrame: frame
+        )
+
+        let record = BreadcrumbRecord(
+            text: "Hidden while minimized",
+            context: context,
+            anchorPoint: .zero
+        )
+
+        let minimized = ContextSnapshot(
+            bundleIdentifier: "com.test.app",
+            applicationName: "Test",
+            windowTitle: "Document",
+            windowFrame: frame,
+            isMinimized: true
+        )
+
+        XCTAssertFalse(minimized.matches(record))
     }
 
     func testStoreRoundTrip() {
@@ -88,7 +185,11 @@ final class BreadcrumbTests: XCTestCase {
             bundleIdentifier: "com.test.app",
             applicationName: "Test",
             windowTitle: "Document",
-            windowFrame: nil
+            windowFrame: CGRect(x: 0, y: 0, width: 800, height: 600),
+            documentURL: "https://example.com",
+            selectedTabTitle: "Example",
+            selectedTabIndex: 2,
+            displayIdentifier: "1"
         )
 
         let record = BreadcrumbRecord(
