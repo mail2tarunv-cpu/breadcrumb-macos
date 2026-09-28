@@ -1,15 +1,71 @@
 import AppKit
 import Carbon.HIToolbox
 
+enum CaptureShortcut: String, CaseIterable, Identifiable {
+    case optionSpace
+    case controlSpace
+    case commandShiftB
+    case optionB
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .optionSpace: return "⌥ Space"
+        case .controlSpace: return "⌃ Space"
+        case .commandShiftB: return "⌘⇧ B"
+        case .optionB: return "⌥ B"
+        }
+    }
+
+    var keyCode: UInt32 {
+        switch self {
+        case .optionSpace, .controlSpace:
+            return UInt32(kVK_Space)
+        case .commandShiftB, .optionB:
+            return UInt32(kVK_ANSI_B)
+        }
+    }
+
+    var modifiers: UInt32 {
+        switch self {
+        case .optionSpace:
+            return UInt32(optionKey)
+        case .controlSpace:
+            return UInt32(controlKey)
+        case .commandShiftB:
+            return UInt32(cmdKey | shiftKey)
+        case .optionB:
+            return UInt32(optionKey)
+        }
+    }
+
+    static var current: CaptureShortcut {
+        let raw = UserDefaults.standard.string(forKey: "breadcrumb.capture.shortcut") ?? ""
+        return CaptureShortcut(rawValue: raw) ?? .optionSpace
+    }
+}
+
 final class HotKeyManager {
+    static let shortcutDidChange = Notification.Name("BreadcrumbCaptureShortcutDidChange")
+
     private var hotKeyRef: EventHotKeyRef?
     private var eventHandler: EventHandlerRef?
+    private var shortcutObserver: NSObjectProtocol?
     private let action: () -> Void
 
     init(action: @escaping () -> Void) {
         self.action = action
         installHandler()
         registerShortcut()
+
+        shortcutObserver = NotificationCenter.default.addObserver(
+            forName: Self.shortcutDidChange,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            self?.registerShortcut()
+        }
     }
 
     deinit {
@@ -18,6 +74,9 @@ final class HotKeyManager {
         }
         if let eventHandler {
             RemoveEventHandler(eventHandler)
+        }
+        if let shortcutObserver {
+            NotificationCenter.default.removeObserver(shortcutObserver)
         }
     }
 
@@ -71,11 +130,17 @@ final class HotKeyManager {
     }
 
     private func registerShortcut() {
+        if let hotKeyRef {
+            UnregisterEventHotKey(hotKeyRef)
+            self.hotKeyRef = nil
+        }
+
+        let shortcut = CaptureShortcut.current
         let id = EventHotKeyID(signature: fourCharCode("BRDC"), id: 1)
 
         let status = RegisterEventHotKey(
-            UInt32(kVK_Space),
-            UInt32(optionKey),
+            shortcut.keyCode,
+            shortcut.modifiers,
             id,
             GetApplicationEventTarget(),
             0,
@@ -84,7 +149,9 @@ final class HotKeyManager {
 
         DiagnosticLog.shared.record(
             category: "Hotkey",
-            summary: status == noErr ? "⌥ Space registered" : "⌥ Space registration failed",
+            summary: status == noErr
+                ? "\(shortcut.title) registered"
+                : "\(shortcut.title) registration failed",
             detail: "RegisterEventHotKey status: \(status)"
         )
     }
