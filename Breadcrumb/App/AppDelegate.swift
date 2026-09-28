@@ -39,6 +39,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private lazy var diagnosticsController = DiagnosticsWindowController()
 
+    private lazy var settingsController = SettingsWindowController(
+        onOpenLibrary: { [weak self] in
+            self?.historyController.present()
+        },
+        onOpenDiagnostics: { [weak self] in
+            self?.diagnosticsController.present()
+        },
+        onShowOnboarding: { [weak self] in
+            self?.onboardingController.present()
+        }
+    )
+
     private lazy var onboardingController = OnboardingWindowController(
         onFinish: { [weak self] in
             self?.rebuildMenu()
@@ -121,7 +133,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         menu.addItem(
             NSMenuItem(
-                title: "Resume Current Context…",
+                title: "Pick Up Where I Left Off…",
                 action: #selector(resumeCurrentContext),
                 keyEquivalent: ""
             )
@@ -191,8 +203,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     @objc private func openSettings() {
-        NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil)
-        NSApp.activate(ignoringOtherApps: true)
+        settingsController.present()
     }
 
     @objc private func quit() {
