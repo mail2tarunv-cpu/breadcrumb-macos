@@ -46,8 +46,8 @@ final class ComposerController {
         }
 
         let pointer = NSEvent.mouseLocation
-        let width: CGFloat = 380
-        let height: CGFloat = context == nil ? 76 : 58
+        let width: CGFloat = 420
+        let height: CGFloat = context == nil ? 112 : 108
         let size = NSSize(width: width, height: height)
 
         let origin = constrainedOrigin(
