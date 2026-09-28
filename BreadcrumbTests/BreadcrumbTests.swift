@@ -146,6 +146,70 @@ final class BreadcrumbTests: XCTestCase {
         XCTAssertFalse(duplicateTab.matches(record))
     }
 
+    func testPersistedContextMatchesAfterProcessRelaunch() {
+        let frame = CGRect(x: 0, y: 0, width: 1200, height: 800)
+
+        let original = ContextSnapshot(
+            bundleIdentifier: "com.apple.Safari",
+            applicationName: "Safari",
+            windowTitle: "Example",
+            windowFrame: frame,
+            processIdentifier: 100,
+            windowNumber: 10,
+            documentURL: "https://example.com",
+            selectedTabTitle: "Example",
+            selectedTabIndex: 0
+        )
+
+        let record = BreadcrumbRecord(
+            text: "Return here",
+            context: original,
+            anchorPoint: CGPoint(x: 400, y: 300)
+        )
+
+        let relaunched = ContextSnapshot(
+            bundleIdentifier: "com.apple.Safari",
+            applicationName: "Safari",
+            windowTitle: "Example",
+            windowFrame: frame,
+            processIdentifier: 200,
+            windowNumber: 55,
+            documentURL: "https://example.com",
+            selectedTabTitle: "Example",
+            selectedTabIndex: 3
+        )
+
+        XCTAssertTrue(relaunched.matches(record))
+    }
+
+    func testSnoozeStateRoundTripsThroughStore() {
+        let suiteName = "BreadcrumbTests.Snooze.\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suiteName)!
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+
+        let store = BreadcrumbStore(defaults: defaults)
+        let context = ContextSnapshot(
+            bundleIdentifier: "com.test.app",
+            applicationName: "Test",
+            windowTitle: "Document",
+            windowFrame: CGRect(x: 0, y: 0, width: 800, height: 600)
+        )
+
+        var record = BreadcrumbRecord(
+            text: "Later",
+            context: context,
+            anchorPoint: .zero
+        )
+        record.snoozedUntil = Date().addingTimeInterval(3600)
+
+        store.save([record])
+        let loaded = store.load()
+
+        XCTAssertEqual(loaded.count, 1)
+        XCTAssertEqual(loaded.first?.snoozedUntil, record.snoozedUntil)
+        XCTAssertTrue(loaded.first?.isSnoozed == true)
+    }
+
     func testMinimizedContextNeverMatches() {
         let frame = CGRect(x: 0, y: 0, width: 900, height: 600)
 
