@@ -9,6 +9,7 @@ final class HistoryWindowController {
     private let onDelete: (UUID) -> Void
     private let onSnooze: (UUID, Date) -> Void
     private let onWake: (UUID) -> Void
+    private let onReopen: (UUID) -> Void
 
     init(
         recordsProvider: @escaping () -> [BreadcrumbRecord],
@@ -16,7 +17,8 @@ final class HistoryWindowController {
         onArchive: @escaping (UUID) -> Void,
         onDelete: @escaping (UUID) -> Void,
         onSnooze: @escaping (UUID, Date) -> Void,
-        onWake: @escaping (UUID) -> Void
+        onWake: @escaping (UUID) -> Void,
+        onReopen: @escaping (UUID) -> Void
     ) {
         self.recordsProvider = recordsProvider
         self.onRestore = onRestore
@@ -24,6 +26,7 @@ final class HistoryWindowController {
         self.onDelete = onDelete
         self.onSnooze = onSnooze
         self.onWake = onWake
+        self.onReopen = onReopen
     }
 
     func present() {
@@ -48,6 +51,10 @@ final class HistoryWindowController {
             },
             onWake: { [weak self] id in
                 self?.onWake(id)
+                self?.reload()
+            },
+            onReopen: { [weak self] id in
+                self?.onReopen(id)
                 self?.reload()
             }
         )
