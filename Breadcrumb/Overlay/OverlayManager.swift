@@ -18,6 +18,7 @@ final class OverlayManager: NSObject, NSWindowDelegate {
     private var workspaceObserver: NSObjectProtocol?
     private var refreshTimer: Timer?
     private var programmaticMoves: Set<UUID> = []
+    private var lastDecisionByRecord: [UUID: String] = [:]
 
     init(contextObserver: ContextObserver, store: BreadcrumbStore) {
         self.contextObserver = contextObserver
@@ -38,7 +39,7 @@ final class OverlayManager: NSObject, NSWindowDelegate {
     }
 
     func start() {
-        for record in records where !record.isArchived {
+        for record in records where !record.isArchived && record.hasStableContext {
             createPanelIfNeeded(for: record)
         }
 
@@ -51,7 +52,7 @@ final class OverlayManager: NSObject, NSWindowDelegate {
         }
 
         refreshTimer = Timer.scheduledTimer(
-            withTimeInterval: 0.12,
+            withTimeInterval: 0.15,
             repeats: true
         ) { [weak self] _ in
             self?.refresh()
@@ -65,6 +66,15 @@ final class OverlayManager: NSObject, NSWindowDelegate {
         near point: NSPoint,
         context: ContextSnapshot
     ) {
+        guard context.hasStableIdentity else {
+            DiagnosticLog.shared.record(
+                category: "Capture",
+                summary: "Rejected breadcrumb",
+                detail: "Reason: context did not have a stable focused window identity."
+            )
+            return
+        }
+
         let record = BreadcrumbRecord(
             text: text,
             context: context,
@@ -73,6 +83,17 @@ final class OverlayManager: NSObject, NSWindowDelegate {
 
         records.append(record)
         persist()
+
+        DiagnosticLog.shared.record(
+            category: "Capture",
+            summary: "Saved breadcrumb in \(context.applicationName)",
+            detail: [
+                "id: \(record.id.uuidString)",
+                "title: \(context.windowTitle ?? "nil")",
+                "windowNumber: \(context.windowNumber.map(String.init) ?? "nil")",
+                "anchor: \(NSStringFromPoint(point))"
+            ].joined(separator: "\n")
+        )
 
         createPanelIfNeeded(for: record)
         refresh(preferredContext: context)
@@ -87,6 +108,12 @@ final class OverlayManager: NSObject, NSWindowDelegate {
 
         panels[id]?.orderOut(nil)
         editorController.dismiss()
+
+        DiagnosticLog.shared.record(
+            category: "Action",
+            summary: "Archived breadcrumb",
+            detail: "id: \(id.uuidString)"
+        )
     }
 
     func restore(_ id: UUID) {
@@ -96,7 +123,10 @@ final class OverlayManager: NSObject, NSWindowDelegate {
         records[index].updatedAt = Date()
         persist()
 
-        createPanelIfNeeded(for: records[index])
+        if records[index].hasStableContext {
+            createPanelIfNeeded(for: records[index])
+        }
+
         refresh()
     }
 
@@ -121,11 +151,17 @@ final class OverlayManager: NSObject, NSWindowDelegate {
             panels.removeValue(forKey: record.id)
         }
 
-        createPanelIfNeeded(for: record)
+        if record.hasStableContext {
+            createPanelIfNeeded(for: record)
+        }
     }
 
     private func createPanelIfNeeded(for record: BreadcrumbRecord) {
-        guard panels[record.id] == nil, !record.isArchived else { return }
+        guard panels[record.id] == nil,
+              !record.isArchived,
+              record.hasStableContext else {
+            return
+        }
 
         let size = NSSize(width: 24, height: 24)
         let fallbackPoint = record.anchorPoint(in: nil)
@@ -147,7 +183,7 @@ final class OverlayManager: NSObject, NSWindowDelegate {
         panel.hasShadow = false
         panel.level = .floating
         panel.collectionBehavior = [.moveToActiveSpace, .fullScreenAuxiliary]
-        panel.isMovableByWindowBackground = true
+        panel.isMovableByWindowBackground = false
         panel.hidesOnDeactivate = false
         panel.ignoresMouseEvents = false
         panel.delegate = self
@@ -172,6 +208,12 @@ final class OverlayManager: NSObject, NSWindowDelegate {
             return
         }
 
+        DiagnosticLog.shared.record(
+            category: "Action",
+            summary: "Opened breadcrumb editor",
+            detail: "id: \(id.uuidString)\ntext: \(record.text)"
+        )
+
         let anchorPoint = CGPoint(
             x: panel.frame.midX,
             y: panel.frame.midY
@@ -190,39 +232,80 @@ final class OverlayManager: NSObject, NSWindowDelegate {
     }
 
     private func refresh(preferredContext: ContextSnapshot? = nil) {
-        guard let activeBundle = NSWorkspace.shared.frontmostApplication?.bundleIdentifier else {
-            hideAll()
+        guard let context = preferredContext ?? contextObserver.captureCurrent() else {
+            for record in records where !record.isArchived {
+                decide(record: record, visible: false, reason: "No stable focused window context")
+                panels[record.id]?.orderOut(nil)
+            }
+            editorController.dismiss()
             return
         }
 
-        let context: ContextSnapshot?
-        if let preferredContext, preferredContext.bundleIdentifier == activeBundle {
-            context = preferredContext
-        } else {
-            context = contextObserver.captureCurrent()
-        }
-
-        for index in records.indices where !records[index].isArchived {
-            let record = records[index]
+        for record in records where !record.isArchived {
             guard let panel = panels[record.id] else { continue }
 
-            // Bundle identity is the hard boundary. This prevents a breadcrumb
-            // from following the user onto Finder/Desktop or another app even
-            // if Accessibility briefly reports stale window metadata.
-            guard record.bundleIdentifier == activeBundle else {
+            if context.matches(record) {
+                let point = record.anchorPoint(in: context.windowFrame)
+                reposition(panel, recordID: record.id, center: point)
+                panel.orderFrontRegardless()
+                decide(record: record, visible: true, reason: matchReason(record: record, context: context))
+            } else {
                 panel.orderOut(nil)
-                continue
+                decide(record: record, visible: false, reason: mismatchReason(record: record, context: context))
             }
-
-            if let context, !context.matches(record) {
-                panel.orderOut(nil)
-                continue
-            }
-
-            let point = record.anchorPoint(in: context?.windowFrame)
-            reposition(panel, recordID: record.id, center: point)
-            panel.orderFrontRegardless()
         }
+    }
+
+    private func matchReason(record: BreadcrumbRecord, context: ContextSnapshot) -> String {
+        if let savedPID = record.processIdentifier,
+           let currentPID = context.processIdentifier,
+           savedPID == currentPID,
+           record.windowNumber != nil,
+           context.windowNumber != nil {
+            return "Matched bundle + title + same-session window number"
+        }
+
+        return "Matched bundle + persisted window title"
+    }
+
+    private func mismatchReason(record: BreadcrumbRecord, context: ContextSnapshot) -> String {
+        if record.bundleIdentifier != context.bundleIdentifier {
+            return "Bundle mismatch: saved \(record.bundleIdentifier), current \(context.bundleIdentifier)"
+        }
+
+        let savedTitle = record.windowTitle ?? "nil"
+        let currentTitle = context.windowTitle ?? "nil"
+
+        if savedTitle != currentTitle {
+            return "Window title mismatch: saved [\(savedTitle)] current [\(currentTitle)]"
+        }
+
+        if let savedPID = record.processIdentifier,
+           let currentPID = context.processIdentifier,
+           savedPID == currentPID,
+           let savedWindow = record.windowNumber,
+           let currentWindow = context.windowNumber,
+           savedWindow != currentWindow {
+            return "Same app/title but different window number: saved \(savedWindow), current \(currentWindow)"
+        }
+
+        return "Context did not satisfy strict match"
+    }
+
+    private func decide(record: BreadcrumbRecord, visible: Bool, reason: String) {
+        let decision = "\(visible ? "SHOW" : "HIDE")|\(reason)"
+        guard lastDecisionByRecord[record.id] != decision else { return }
+        lastDecisionByRecord[record.id] = decision
+
+        DiagnosticLog.shared.record(
+            category: "Match",
+            summary: "\(visible ? "SHOW" : "HIDE") · \(record.applicationName)",
+            detail: [
+                "breadcrumb: \(record.id.uuidString)",
+                "text: \(record.text)",
+                "reason: \(reason)"
+            ].joined(separator: "\n")
+        )
     }
 
     private func reposition(
@@ -245,39 +328,9 @@ final class OverlayManager: NSObject, NSWindowDelegate {
         programmaticMoves.remove(recordID)
     }
 
-    private func hideAll() {
-        panels.values.forEach { $0.orderOut(nil) }
-        editorController.dismiss()
-    }
-
     func windowDidMove(_ notification: Notification) {
-        guard let panel = notification.object as? NSPanel,
-              let recordID = panelToRecord[ObjectIdentifier(panel)],
-              !programmaticMoves.contains(recordID),
-              let recordIndex = records.firstIndex(where: { $0.id == recordID }),
-              let context = contextObserver.captureCurrent(),
-              context.matches(records[recordIndex]),
-              let frame = context.windowFrame,
-              frame.width > 0,
-              frame.height > 0 else {
-            return
-        }
-
-        let center = CGPoint(
-            x: panel.frame.midX,
-            y: panel.frame.midY
-        )
-
-        records[recordIndex].relativeX = min(
-            max((center.x - frame.minX) / frame.width, 0),
-            1
-        )
-        records[recordIndex].relativeY = min(
-            max((center.y - frame.minY) / frame.height, 0),
-            1
-        )
-        records[recordIndex].updatedAt = Date()
-
-        persist()
+        // Marker dragging is intentionally disabled while we validate click
+        // handling and exact-context matching. Re-enable drag after those are
+        // stable.
     }
 }
