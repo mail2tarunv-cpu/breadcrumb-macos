@@ -8,6 +8,10 @@ struct BreadcrumbRecord: Codable, Identifiable, Equatable {
     let windowTitle: String?
     let processIdentifier: pid_t?
     let windowNumber: Int?
+    let documentURL: String?
+    let selectedTabTitle: String?
+    let selectedTabIndex: Int?
+    let displayIdentifier: String?
     var relativeX: Double
     var relativeY: Double
     let fallbackScreenX: Double
@@ -29,6 +33,10 @@ struct BreadcrumbRecord: Codable, Identifiable, Equatable {
         self.windowTitle = context.windowTitle
         self.processIdentifier = context.processIdentifier
         self.windowNumber = context.windowNumber
+        self.documentURL = context.documentURL
+        self.selectedTabTitle = context.selectedTabTitle
+        self.selectedTabIndex = context.selectedTabIndex
+        self.displayIdentifier = context.displayIdentifier
         self.fallbackScreenX = anchorPoint.x
         self.fallbackScreenY = anchorPoint.y
         self.createdAt = Date()
@@ -45,13 +53,27 @@ struct BreadcrumbRecord: Codable, Identifiable, Equatable {
     }
 
     var hasStableContext: Bool {
-        guard let title = windowTitle?
-            .trimmingCharacters(in: .whitespacesAndNewlines),
-              !title.isEmpty else {
-            return false
+        let hasDocument = !(documentURL?
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .isEmpty ?? true)
+
+        let hasTitle = !(windowTitle?
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .isEmpty ?? true)
+
+        return hasDocument || hasTitle
+    }
+
+    var contextSummary: String {
+        if let documentURL, !documentURL.isEmpty {
+            return documentURL
         }
 
-        return true
+        if let selectedTabTitle, !selectedTabTitle.isEmpty {
+            return selectedTabTitle
+        }
+
+        return windowTitle ?? applicationName
     }
 
     func anchorPoint(in windowFrame: CGRect?) -> CGPoint {
