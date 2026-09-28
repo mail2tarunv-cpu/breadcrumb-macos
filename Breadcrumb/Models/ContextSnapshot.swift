@@ -7,6 +7,11 @@ struct ContextSnapshot: Equatable {
     let windowFrame: CGRect?
     let processIdentifier: pid_t?
     let windowNumber: Int?
+    let documentURL: String?
+    let selectedTabTitle: String?
+    let selectedTabIndex: Int?
+    let isMinimized: Bool
+    let displayIdentifier: String?
 
     init(
         bundleIdentifier: String,
@@ -14,7 +19,12 @@ struct ContextSnapshot: Equatable {
         windowTitle: String?,
         windowFrame: CGRect?,
         processIdentifier: pid_t? = nil,
-        windowNumber: Int? = nil
+        windowNumber: Int? = nil,
+        documentURL: String? = nil,
+        selectedTabTitle: String? = nil,
+        selectedTabIndex: Int? = nil,
+        isMinimized: Bool = false,
+        displayIdentifier: String? = nil
     ) {
         self.bundleIdentifier = bundleIdentifier
         self.applicationName = applicationName
@@ -22,43 +32,78 @@ struct ContextSnapshot: Equatable {
         self.windowFrame = windowFrame
         self.processIdentifier = processIdentifier
         self.windowNumber = windowNumber
+        self.documentURL = documentURL
+        self.selectedTabTitle = selectedTabTitle
+        self.selectedTabIndex = selectedTabIndex
+        self.isMinimized = isMinimized
+        self.displayIdentifier = displayIdentifier
     }
 
     var hasStableIdentity: Bool {
-        guard let title = normalized(windowTitle),
-              !title.isEmpty,
+        guard !isMinimized,
               let frame = windowFrame,
               frame.width > 0,
               frame.height > 0 else {
             return false
         }
 
-        return true
+        return normalized(documentURL) != nil || normalized(windowTitle) != nil
     }
 
     func matches(_ record: BreadcrumbRecord) -> Bool {
         guard bundleIdentifier == record.bundleIdentifier else { return false }
         guard hasStableIdentity else { return false }
-        guard let currentTitle = normalized(windowTitle),
-              let savedTitle = normalized(record.windowTitle),
-              currentTitle == savedTitle else {
+
+        let sameSession = processIdentifier != nil
+            && record.processIdentifier != nil
+            && processIdentifier == record.processIdentifier
+
+        if sameSession,
+           let savedWindow = record.windowNumber,
+           let currentWindow = windowNumber,
+           savedWindow != currentWindow {
             return false
         }
 
-        if let savedPID = record.processIdentifier,
-           let currentPID = processIdentifier,
-           savedPID == currentPID,
-           let savedWindow = record.windowNumber,
-           let currentWindow = windowNumber {
-            return savedWindow == currentWindow
+        if let savedDocument = normalized(record.documentURL) {
+            guard normalized(documentURL) == savedDocument else { return false }
+
+            if sameSession,
+               let savedTabIndex = record.selectedTabIndex,
+               let currentTabIndex = selectedTabIndex,
+               savedTabIndex != currentTabIndex {
+                return false
+            }
+
+            return true
+        }
+
+        guard let savedTitle = normalized(record.windowTitle),
+              normalized(windowTitle) == savedTitle else {
+            return false
+        }
+
+        if let savedTabTitle = normalized(record.selectedTabTitle) {
+            guard normalized(selectedTabTitle) == savedTabTitle else { return false }
+        }
+
+        if sameSession,
+           let savedTabIndex = record.selectedTabIndex,
+           let currentTabIndex = selectedTabIndex,
+           savedTabIndex != currentTabIndex {
+            return false
         }
 
         return true
     }
 
     private func normalized(_ value: String?) -> String? {
-        value?
+        guard let value else { return nil }
+
+        let normalized = value
             .trimmingCharacters(in: .whitespacesAndNewlines)
             .replacingOccurrences(of: "\n", with: " ")
+
+        return normalized.isEmpty ? nil : normalized
     }
 }
