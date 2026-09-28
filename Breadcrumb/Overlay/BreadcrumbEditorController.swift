@@ -7,13 +7,15 @@ private final class BreadcrumbEditorPanel: NSPanel {
 
 final class BreadcrumbEditorController {
     private var panel: NSPanel?
+    private var onDismiss: (() -> Void)?
 
     func present(
         record: BreadcrumbRecord,
         near anchorPoint: CGPoint,
         onSave: @escaping (String) -> Void,
         onArchive: @escaping () -> Void,
-        onDelete: @escaping () -> Void
+        onDelete: @escaping () -> Void,
+        onDismiss: @escaping () -> Void
     ) {
         dismiss()
 
@@ -62,6 +64,7 @@ final class BreadcrumbEditorController {
             }
         )
 
+        self.onDismiss = onDismiss
         panel.contentView = NSHostingView(rootView: view)
         panel.orderFrontRegardless()
         panel.makeKeyAndOrderFront(nil)
@@ -79,8 +82,11 @@ final class BreadcrumbEditorController {
     }
 
     func dismiss() {
+        let callback = onDismiss
+        onDismiss = nil
         panel?.orderOut(nil)
         panel = nil
+        callback?()
     }
 
     private func constrainedOrigin(
