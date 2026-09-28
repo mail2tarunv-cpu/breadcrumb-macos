@@ -4,6 +4,8 @@ import ServiceManagement
 struct SettingsView: View {
     @State private var launchAtLogin = SMAppService.mainApp.status == .enabled
     @State private var launchError: String?
+    @AppStorage("breadcrumb.resume.autoEnabled") private var autoResumeEnabled = true
+    @AppStorage("breadcrumb.resume.cooldownMinutes") private var autoResumeCooldownMinutes = 15.0
 
     let onOpenLibrary: () -> Void
     let onOpenDiagnostics: () -> Void
@@ -84,11 +86,27 @@ struct SettingsView: View {
             }
 
             Section("Pick Up Where I Left Off") {
-                Text("Shows the active breadcrumbs attached to the window or tab you are currently viewing, so you can quickly remember what you were doing there.")
+                Toggle("Automatically show context summary", isOn: $autoResumeEnabled)
+
+                if autoResumeEnabled {
+                    Picker("Show again after", selection: $autoResumeCooldownMinutes) {
+                        Text("5 minutes").tag(5.0)
+                        Text("15 minutes").tag(15.0)
+                        Text("30 minutes").tag(30.0)
+                        Text("1 hour").tag(60.0)
+                    }
+
+                    LabeledContent("Minimum breadcrumbs") {
+                        Text("2")
+                            .foregroundStyle(.secondary)
+                    }
+                }
+
+                Text("When you return to a window or tab with two or more active breadcrumbs, Breadcrumb can briefly surface them together so you can pick up where you left off.")
                     .font(.system(size: 11))
                     .foregroundStyle(.secondary)
 
-                Text("This is currently opened manually from the menu bar. Automatic resurfacing will come after we finish tuning the interaction.")
+                Text("The summary waits until you stay in the context briefly and respects the cooldown above.")
                     .font(.system(size: 11))
                     .foregroundStyle(.tertiary)
             }
@@ -140,7 +158,7 @@ struct SettingsView: View {
 
             Section("About") {
                 LabeledContent("Version") {
-                    Text("1.2")
+                    Text("1.3")
                         .foregroundStyle(.secondary)
                 }
                 Text("Leave thoughts where they happen.")
