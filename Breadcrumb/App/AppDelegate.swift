@@ -22,6 +22,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         onArchive: { [weak self] id in
             self?.overlayManager.archive(id)
             self?.rebuildMenu()
+        },
+        onDelete: { [weak self] id in
+            self?.overlayManager.delete(id)
+            self?.rebuildMenu()
         }
     )
 
@@ -76,7 +80,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private func configureMenuBar() {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
         statusItem.button?.image = NSImage(
-            systemSymbolName: "circle.dotted",
+            systemSymbolName: "point.topleft.down.to.point.bottomright.curvepath",
             accessibilityDescription: "Breadcrumb"
         )
 
