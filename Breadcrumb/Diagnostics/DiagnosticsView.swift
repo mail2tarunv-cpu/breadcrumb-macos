@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 
 struct DiagnosticsView: View {
@@ -72,6 +73,15 @@ struct DiagnosticsView: View {
                     Image(systemName: "arrow.clockwise")
                 }
                 .help("Refresh")
+
+                Button("Copy Support Summary") {
+                    NSPasteboard.general.clearContents()
+                    NSPasteboard.general.setString(
+                        DiagnosticLog.shared.supportSummary(),
+                        forType: .string
+                    )
+                }
+                .help("Copies version, system, permission, and event summaries without note text")
 
                 Button("Clear") {
                     onClear()
