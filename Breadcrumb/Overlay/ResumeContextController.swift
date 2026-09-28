@@ -8,6 +8,10 @@ private final class ResumeContextPanel: NSPanel {
 final class ResumeContextController {
     private var panel: NSPanel?
 
+    var isPresented: Bool {
+        panel?.isVisible == true
+    }
+
     func present(
         applicationName: String,
         contextTitle: String?,
