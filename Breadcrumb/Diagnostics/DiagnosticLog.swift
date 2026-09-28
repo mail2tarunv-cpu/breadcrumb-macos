@@ -43,7 +43,7 @@ final class DiagnosticLog {
         let permission = PermissionManager.hasAccessibilityAccess ? "enabled" : "not enabled"
 
         let categoryCounts = Dictionary(grouping: events, by: \.category)
-            .map { key, value in "\(key): \(value.count)" }
+            .map { "\($0.key): \($0.value.count)" }
             .sorted()
             .joined(separator: ", ")
 
