@@ -90,6 +90,7 @@ final class OverlayManager: NSObject {
     private let store: BreadcrumbStore
     private let editorController = BreadcrumbEditorController()
     private let resumeContextController = ResumeContextController()
+    private let contextStackController = ContextStackController()
 
     private var records: [BreadcrumbRecord]
     private var panels: [UUID: NSPanel] = [:]
@@ -104,6 +105,10 @@ final class OverlayManager: NSObject {
     private var autoResumeCandidateKey: String?
     private var autoResumeCandidateSince: Date?
     private var lastAutoResumeByContext: [String: Date] = [:]
+    private var activeContextKey: String?
+    private var lastLeftAtByContext: [String: Date] = [:]
+
+    private let crowdedContextThreshold = 5
 
     private let autoResumeEnabledKey = "breadcrumb.resume.autoEnabled"
     private let autoResumeCooldownKey = "breadcrumb.resume.cooldownMinutes"
@@ -416,6 +421,7 @@ final class OverlayManager: NSObject {
     private func hideEditingPanel() {
         guard let editingRecordID else { return }
         panels[editingRecordID]?.orderOut(nil)
+        contextStackController.dismiss()
     }
 
     private func finishEditing() {
@@ -555,7 +561,15 @@ final class OverlayManager: NSObject {
         let matchingRecords = matchingRecords(for: context)
             .sorted { $0.createdAt < $1.createdAt }
 
-        let layoutRecords = matchingRecords.filter { $0.id != draggingRecordID }
+        updateContextVisit(for: context)
+
+        let isCrowdedContext = matchingRecords.count >= crowdedContextThreshold
+            && editingRecordID == nil
+            && draggingRecordID == nil
+
+        let layoutRecords = isCrowdedContext
+            ? []
+            : matchingRecords.filter { $0.id != draggingRecordID }
 
         let resolvedCenters = resolvedMarkerCenters(
             for: layoutRecords,
@@ -586,6 +600,16 @@ final class OverlayManager: NSObject {
             }
 
             if context.matches(record) {
+                if isCrowdedContext {
+                    panel.orderOut(nil)
+                    decide(
+                        record: record,
+                        visible: false,
+                        reason: "Collapsed into context stack"
+                    )
+                    continue
+                }
+
                 let point = resolvedCenters[record.id]
                     ?? record.anchorPoint(in: context.windowFrame)
                 reposition(panel, center: point)
@@ -603,6 +627,23 @@ final class OverlayManager: NSObject {
                     reason: mismatchReason(record: record, context: context)
                 )
             }
+        }
+
+        if isCrowdedContext {
+            contextStackController.present(
+                records: matchingRecords,
+                in: context.windowFrame,
+                onOpen: { [weak self] in
+                    self?.contextStackController.dismiss()
+                    self?.showResumeContext(
+                        context: context,
+                        records: matchingRecords,
+                        source: "stack"
+                    )
+                }
+            )
+        } else {
+            contextStackController.dismiss()
         }
 
         if editingRecordID == nil {
@@ -634,6 +675,21 @@ final class OverlayManager: NSObject {
         ].joined(separator: "|")
     }
 
+    private func updateContextVisit(for context: ContextSnapshot) {
+        let key = contextKey(for: context)
+        guard activeContextKey != key else { return }
+
+        let now = Date()
+
+        if let previous = activeContextKey {
+            lastLeftAtByContext[previous] = now
+        }
+
+        activeContextKey = key
+        autoResumeCandidateKey = key
+        autoResumeCandidateSince = now
+    }
+
     private func maybeAutoPresentResumeContext(
         context: ContextSnapshot,
         matchingRecords: [BreadcrumbRecord]
@@ -662,14 +718,19 @@ final class OverlayManager: NSObject {
             return
         }
 
-        let cooldownMinutes = max(
+        let awayMinutes = max(
             UserDefaults.standard.double(forKey: autoResumeCooldownKey),
             1
         )
-        let cooldown = cooldownMinutes * 60
+        let minimumAway = awayMinutes * 60
+
+        guard let leftAt = lastLeftAtByContext[key],
+              now.timeIntervalSince(leftAt) >= minimumAway else {
+            return
+        }
 
         if let lastShown = lastAutoResumeByContext[key],
-           now.timeIntervalSince(lastShown) < cooldown {
+           now.timeIntervalSince(lastShown) < minimumAway {
             return
         }
 
@@ -693,6 +754,7 @@ final class OverlayManager: NSObject {
         records: [BreadcrumbRecord],
         source: String
     ) {
+        contextStackController.dismiss()
         let contextTitle: String?
         if let tab = context.selectedTabTitle, !tab.isEmpty {
             contextTitle = tab
