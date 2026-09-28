@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 import ServiceManagement
 
@@ -148,7 +149,15 @@ struct SettingsView: View {
             Section("Troubleshooting") {
                 Button("Open Context Diagnostics…", action: onOpenDiagnostics)
 
-                Text("Diagnostics help explain why a breadcrumb appeared, disappeared, or failed to match a window.")
+                Button("Copy Support Summary") {
+                    NSPasteboard.general.clearContents()
+                    NSPasteboard.general.setString(
+                        DiagnosticLog.shared.supportSummary(),
+                        forType: .string
+                    )
+                }
+
+                Text("The support summary includes app version, macOS version, permission state, and diagnostic event summaries. It omits breadcrumb note text and detailed diagnostic payloads.")
                     .font(.system(size: 11))
                     .foregroundStyle(.secondary)
             }
