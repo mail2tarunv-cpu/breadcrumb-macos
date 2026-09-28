@@ -15,9 +15,12 @@ struct HistoryView: View {
         var source = records
 
         switch selectedFilter {
-        case "Active": source = source.filter { !$0.isArchived }
-        case "Archived": source = source.filter { $0.isArchived }
-        default: break
+        case "Active":
+            source = source.filter { !$0.isArchived }
+        case "Archived":
+            source = source.filter { $0.isArchived }
+        default:
+            break
         }
 
         let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -34,72 +37,68 @@ struct HistoryView: View {
         return source.sorted { $0.updatedAt > $1.updatedAt }
     }
 
-    private var activeCount: Int { records.filter { !$0.isArchived }.count }
+    private var activeCount: Int {
+        records.filter { !$0.isArchived && !$0.isSnoozed }.count
+    }
 
     var body: some View {
         VStack(spacing: 0) {
-            header
+            HStack(spacing: 14) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Breadcrumbs")
+                        .font(.system(size: 22, weight: .semibold))
+
+                    Text(activeCount == 1 ? "1 active breadcrumb" : "\(activeCount) active breadcrumbs")
+                        .font(.system(size: 11.5))
+                        .foregroundStyle(.secondary)
+                }
+
+                Spacer()
+
+                Picker("Filter", selection: $selectedFilter) {
+                    Text("All").tag("All")
+                    Text("Active").tag("Active")
+                    Text("Archived").tag("Archived")
+                }
+                .pickerStyle(.segmented)
+                .frame(width: 220)
+            }
+            .padding(.horizontal, 20)
+            .padding(.vertical, 16)
+
             Divider()
 
             if filteredRecords.isEmpty {
                 ContentUnavailableView {
-                    Label("Nothing here yet", systemImage: "circle.dotted")
+                    Label("No Breadcrumbs", systemImage: "circle.dotted")
                 } description: {
                     Text(searchText.isEmpty
-                         ? "Press ⌥ Space in any window to leave your first breadcrumb."
+                         ? "Press ⌥ Space in any window to leave a thought."
                          : "No breadcrumbs match your search.")
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
-                ScrollView {
-                    LazyVStack(spacing: 10) {
-                        ForEach(filteredRecords) { record in
-                            HistoryCard(
-                                record: record,
-                                onRestore: { onRestore(record.id) },
-                                onArchive: { onArchive(record.id) },
-                                onDelete: { onDelete(record.id) },
-                                onSnooze: { date in onSnooze(record.id, date) },
-                                onWake: { onWake(record.id) }
-                            )
-                        }
+                List {
+                    ForEach(filteredRecords) { record in
+                        BreadcrumbLibraryRow(
+                            record: record,
+                            onRestore: { onRestore(record.id) },
+                            onArchive: { onArchive(record.id) },
+                            onDelete: { onDelete(record.id) },
+                            onSnooze: { date in onSnooze(record.id, date) },
+                            onWake: { onWake(record.id) }
+                        )
                     }
-                    .padding(18)
                 }
-                .background(.primary.opacity(0.015))
+                .listStyle(.inset)
             }
         }
-        .searchable(text: $searchText, placement: .toolbar, prompt: "Search breadcrumbs")
-        .frame(minWidth: 760, minHeight: 600)
-    }
-
-    private var header: some View {
-        HStack(spacing: 16) {
-            VStack(alignment: .leading, spacing: 4) {
-                Text("Breadcrumbs")
-                    .font(.system(size: 26, weight: .semibold))
-
-                Text(activeCount == 1 ? "1 thought waiting for you" : "\(activeCount) thoughts waiting for you")
-                    .font(.system(size: 12.5))
-                    .foregroundStyle(.secondary)
-            }
-
-            Spacer()
-
-            Picker("Filter", selection: $selectedFilter) {
-                Text("All").tag("All")
-                Text("Active").tag("Active")
-                Text("Archived").tag("Archived")
-            }
-            .pickerStyle(.segmented)
-            .frame(width: 240)
-        }
-        .padding(.horizontal, 22)
-        .padding(.vertical, 18)
+        .searchable(text: $searchText, placement: .toolbar, prompt: "Search Breadcrumbs")
+        .frame(minWidth: 720, minHeight: 560)
     }
 }
 
-private struct HistoryCard: View {
+private struct BreadcrumbLibraryRow: View {
     let record: BreadcrumbRecord
     let onRestore: () -> Void
     let onArchive: () -> Void
@@ -108,38 +107,34 @@ private struct HistoryCard: View {
     let onWake: () -> Void
 
     @State private var isExpanded = false
-    @State private var isHovering = false
-    @State private var showDeleteConfirmation = false
+    @State private var isConfirmingDelete = false
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack(alignment: .top, spacing: 12) {
-                ZStack {
-                    RoundedRectangle(cornerRadius: 9, style: .continuous)
-                        .fill(.primary.opacity(0.055))
-                        .frame(width: 34, height: 34)
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(alignment: .top, spacing: 10) {
+                Image(systemName: statusIcon)
+                    .font(.system(size: 13))
+                    .foregroundStyle(.secondary)
+                    .frame(width: 18, height: 18)
 
-                    Image(systemName: record.isArchived ? "archivebox" : (record.isSnoozed ? "clock" : "circle.dotted"))
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundStyle(.secondary)
-                }
-
-                VStack(alignment: .leading, spacing: 5) {
+                VStack(alignment: .leading, spacing: 4) {
                     Text(record.text)
-                        .font(.system(size: 14.5, weight: .medium))
-                        .lineLimit(isExpanded ? nil : 3)
+                        .font(.system(size: 13.5, weight: .medium))
+                        .lineLimit(isExpanded ? nil : 2)
                         .textSelection(.enabled)
 
-                    HStack(spacing: 5) {
+                    HStack(spacing: 4) {
                         Text(record.applicationName)
                             .fontWeight(.medium)
 
                         if let context = visibleContext {
                             Text("·")
-                            Text(context).lineLimit(1)
+                            Text(context)
+                                .lineLimit(1)
                         }
 
                         Text("·")
+
                         if record.isSnoozed, let snoozedUntil = record.snoozedUntil {
                             Text("Snoozed")
                             Text(snoozedUntil, style: .relative)
@@ -155,24 +150,20 @@ private struct HistoryCard: View {
 
                 if record.isArchived {
                     Button("Restore", action: onRestore)
-                        .buttonStyle(.bordered)
                         .controlSize(.small)
                 } else if record.isSnoozed {
                     Button("Wake", action: onWake)
-                        .buttonStyle(.bordered)
                         .controlSize(.small)
-                } else {
-                    Button {
-                        onArchive()
-                    } label: {
-                        Image(systemName: "archivebox")
-                    }
-                    .buttonStyle(.borderless)
-                    .help("Archive")
                 }
 
                 Menu {
+                    Button(isExpanded ? "Hide Context" : "Show Context") {
+                        isExpanded.toggle()
+                    }
+
                     if !record.isArchived {
+                        Divider()
+
                         if record.isSnoozed {
                             Button("Wake Now", systemImage: "sun.max", action: onWake)
                         } else {
@@ -182,28 +173,26 @@ private struct HistoryCard: View {
                             Button("Snooze for 1 Day", systemImage: "moon.zzz") {
                                 onSnooze(Date().addingTimeInterval(60 * 60 * 24))
                             }
+                            Button("Archive", systemImage: "archivebox", action: onArchive)
                         }
-                        Divider()
                     }
-                    Button(isExpanded ? "Hide Context" : "Show Context") {
-                        isExpanded.toggle()
-                    }
+
                     Divider()
-                    Button("Delete Permanently", systemImage: "trash", role: .destructive) {
-                        showDeleteConfirmation = true
+
+                    Button("Delete…", systemImage: "trash", role: .destructive) {
+                        withAnimation(.easeOut(duration: 0.12)) {
+                            isConfirmingDelete = true
+                        }
                     }
                 } label: {
-                    Image(systemName: "ellipsis")
-                        .frame(width: 24, height: 24)
+                    Image(systemName: "ellipsis.circle")
                 }
                 .menuStyle(.borderlessButton)
                 .fixedSize()
             }
 
             if isExpanded {
-                Divider().opacity(0.65)
-
-                Grid(alignment: .leading, horizontalSpacing: 14, verticalSpacing: 6) {
+                Grid(alignment: .leading, horizontalSpacing: 12, verticalSpacing: 5) {
                     contextRow("App", record.applicationName)
                     contextRow("Window", record.windowTitle ?? "Unavailable")
                     contextRow("Document", record.documentURL ?? "Unavailable")
@@ -212,30 +201,43 @@ private struct HistoryCard: View {
                     contextRow("Updated", record.updatedAt.formatted(date: .abbreviated, time: .shortened))
                 }
                 .font(.system(size: 10.5))
-                .padding(.leading, 46)
+                .padding(.leading, 28)
+                .padding(.top, 2)
+            }
+
+            if isConfirmingDelete {
+                HStack(spacing: 8) {
+                    Text("Delete this breadcrumb?")
+                        .font(.system(size: 11.5, weight: .medium))
+
+                    Text("This can’t be undone.")
+                        .font(.system(size: 10.5))
+                        .foregroundStyle(.secondary)
+
+                    Spacer()
+
+                    Button("Cancel") {
+                        withAnimation(.easeOut(duration: 0.12)) {
+                            isConfirmingDelete = false
+                        }
+                    }
+                    .controlSize(.small)
+
+                    Button("Delete", role: .destructive, action: onDelete)
+                        .controlSize(.small)
+                }
+                .padding(.leading, 28)
+                .padding(.top, 3)
             }
         }
-        .padding(14)
-        .background(.regularMaterial)
-        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-        .overlay {
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .stroke(.primary.opacity(isHovering ? 0.11 : 0.06), lineWidth: 0.7)
-        }
-        .shadow(radius: isHovering ? 8 : 0, y: 3)
-        .animation(.easeOut(duration: 0.15), value: isHovering)
-        .onHover { isHovering = $0 }
-        .opacity(record.isArchived ? 0.68 : (record.isSnoozed ? 0.78 : 1))
-        .confirmationDialog(
-            "Delete this breadcrumb permanently?",
-            isPresented: $showDeleteConfirmation,
-            titleVisibility: .visible
-        ) {
-            Button("Delete Permanently", role: .destructive, action: onDelete)
-            Button("Cancel", role: .cancel) {}
-        } message: {
-            Text("This cannot be undone.")
-        }
+        .padding(.vertical, 6)
+        .opacity(record.isArchived ? 0.65 : (record.isSnoozed ? 0.78 : 1))
+    }
+
+    private var statusIcon: String {
+        if record.isArchived { return "archivebox" }
+        if record.isSnoozed { return "clock" }
+        return "circle.dotted"
     }
 
     private var visibleContext: String? {
@@ -249,7 +251,8 @@ private struct HistoryCard: View {
         GridRow {
             Text(label)
                 .foregroundStyle(.tertiary)
-                .frame(width: 62, alignment: .leading)
+                .frame(width: 60, alignment: .leading)
+
             Text(value)
                 .foregroundStyle(.secondary)
                 .textSelection(.enabled)
