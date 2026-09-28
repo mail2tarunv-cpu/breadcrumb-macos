@@ -10,66 +10,76 @@ struct ComposerView: View {
     let onCancel: () -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack(spacing: 9) {
+        VStack(spacing: 0) {
+            HStack(alignment: .top, spacing: 10) {
                 Image(systemName: "circle.dotted")
-                    .font(.system(size: 13, weight: .semibold))
+                    .font(.system(size: 14, weight: .medium))
                     .foregroundStyle(.secondary)
+                    .padding(.top, 2)
 
-                Text(contextAvailable ? "New breadcrumb" : "Window awareness unavailable")
-                    .font(.system(size: 11, weight: .semibold))
-                    .foregroundStyle(.secondary)
+                VStack(alignment: .leading, spacing: 5) {
+                    if contextAvailable {
+                        TextField("Leave a thought here…", text: $text, axis: .vertical)
+                            .textFieldStyle(.plain)
+                            .font(.system(size: 15))
+                            .lineLimit(1...4)
+                            .focused($isFocused)
+                            .onSubmit(submit)
+                            .onExitCommand(perform: onCancel)
+
+                        if let contextLabel, !contextLabel.isEmpty {
+                            Text(contextLabel)
+                                .font(.system(size: 10.5))
+                                .foregroundStyle(.secondary)
+                                .lineLimit(1)
+                        }
+                    } else {
+                        Text("Window awareness unavailable")
+                            .font(.system(size: 13, weight: .semibold))
+
+                        Text("Check Accessibility permission, then try again.")
+                            .font(.system(size: 11))
+                            .foregroundStyle(.secondary)
+                    }
+                }
+
+                Spacer(minLength: 8)
+
+                if contextAvailable {
+                    Text("↩")
+                        .font(.system(size: 10, weight: .semibold, design: .rounded))
+                        .foregroundStyle(.tertiary)
+                } else {
+                    Image(systemName: "exclamationmark.triangle")
+                        .font(.system(size: 12))
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 12)
+
+            HStack {
+                Text("⌥ Space")
+                    .font(.system(size: 9.5, weight: .medium, design: .rounded))
+                    .foregroundStyle(.tertiary)
 
                 Spacer()
 
-                Text("esc")
-                    .font(.system(size: 9, weight: .medium, design: .rounded))
-                    .foregroundStyle(.tertiary)
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 3)
-                    .background(.quaternary.opacity(0.7))
-                    .clipShape(RoundedRectangle(cornerRadius: 5, style: .continuous))
+                Text("Esc to close")
+                    .font(.system(size: 9.5))
+                    .foregroundStyle(.quaternary)
             }
-
-            if contextAvailable {
-                TextField("What do you want to remember here?", text: $text, axis: .vertical)
-                    .textFieldStyle(.plain)
-                    .font(.system(size: 15))
-                    .lineLimit(1...4)
-                    .focused($isFocused)
-                    .onSubmit(submit)
-                    .onExitCommand(perform: onCancel)
-
-                HStack(spacing: 5) {
-                    Image(systemName: "location.fill")
-                        .font(.system(size: 8))
-                    Text(contextLabel ?? "Current window")
-                        .lineLimit(1)
-                    Spacer()
-                    Text("↩ Save")
-                        .fontWeight(.medium)
-                }
-                .font(.system(size: 10.5))
-                .foregroundStyle(.tertiary)
-            } else {
-                Text("Breadcrumb can’t read the focused window right now.")
-                    .font(.system(size: 14, weight: .medium))
-
-                Text("Check Accessibility permission, then try again.")
-                    .font(.system(size: 11))
-                    .foregroundStyle(.secondary)
-            }
+            .padding(.horizontal, 14)
+            .padding(.bottom, 9)
         }
-        .padding(14)
-        .frame(width: 420)
-        .frame(minHeight: contextAvailable ? 108 : 112)
-        .background(.ultraThinMaterial)
-        .clipShape(RoundedRectangle(cornerRadius: 17, style: .continuous))
+        .frame(width: 390)
+        .background(.regularMaterial)
+        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
         .overlay {
-            RoundedRectangle(cornerRadius: 17, style: .continuous)
-                .stroke(.primary.opacity(0.10), lineWidth: 0.7)
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .stroke(.primary.opacity(0.08), lineWidth: 0.5)
         }
-        .shadow(radius: 24, y: 10)
+        .shadow(radius: 18, y: 8)
         .onAppear {
             if contextAvailable {
                 DispatchQueue.main.async { isFocused = true }
