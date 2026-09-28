@@ -6,6 +6,8 @@ struct BreadcrumbRecord: Codable, Identifiable, Equatable {
     let bundleIdentifier: String
     let applicationName: String
     let windowTitle: String?
+    let processIdentifier: pid_t?
+    let windowNumber: Int?
     var relativeX: Double
     var relativeY: Double
     let fallbackScreenX: Double
@@ -25,6 +27,8 @@ struct BreadcrumbRecord: Codable, Identifiable, Equatable {
         self.bundleIdentifier = context.bundleIdentifier
         self.applicationName = context.applicationName
         self.windowTitle = context.windowTitle
+        self.processIdentifier = context.processIdentifier
+        self.windowNumber = context.windowNumber
         self.fallbackScreenX = anchorPoint.x
         self.fallbackScreenY = anchorPoint.y
         self.createdAt = Date()
@@ -38,6 +42,16 @@ struct BreadcrumbRecord: Codable, Identifiable, Equatable {
             self.relativeX = 0.5
             self.relativeY = 0.5
         }
+    }
+
+    var hasStableContext: Bool {
+        guard let title = windowTitle?
+            .trimmingCharacters(in: .whitespacesAndNewlines),
+              !title.isEmpty else {
+            return false
+        }
+
+        return true
     }
 
     func anchorPoint(in windowFrame: CGRect?) -> CGPoint {
