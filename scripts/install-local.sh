@@ -49,6 +49,12 @@ echo "→ Closing any currently running Breadcrumb copy"
 pkill -x "$APP_NAME" >/dev/null 2>&1 || true
 sleep 0.5
 
+echo "→ Cleaning old Breadcrumb Xcode build products"
+setopt local_options null_glob
+for old_app in "$HOME"/Library/Developer/Xcode/DerivedData/Breadcrumb-*/Build/Products/{Debug,Release}/Breadcrumb.app; do
+  rm -rf "$old_app"
+done
+
 echo "→ Replacing installed development copy"
 rm -rf "$INSTALL_PATH"
 ditto "$APP_PATH" "$INSTALL_PATH"
