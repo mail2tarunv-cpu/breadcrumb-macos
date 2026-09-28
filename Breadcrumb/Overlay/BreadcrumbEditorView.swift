@@ -4,6 +4,7 @@ struct BreadcrumbEditorView: View {
     @State private var text: String
     @FocusState private var isFocused: Bool
     @State private var isConfirmingDelete = false
+    @State private var isShowingColorPicker = false
 
     let applicationName: String
     let windowTitle: String?
@@ -45,27 +46,47 @@ struct BreadcrumbEditorView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack(spacing: 8) {
-                Menu {
-                    ForEach(BreadcrumbColor.allCases) { color in
-                        Button {
-                            onColorChange(color)
-                        } label: {
-                            Label {
-                                Text(color.name)
-                            } icon: {
-                                Image(systemName: breadcrumbColor == color ? "checkmark.circle.fill" : "circle.fill")
-                            }
-                        }
-                    }
+                Button {
+                    isShowingColorPicker.toggle()
                 } label: {
                     Circle()
                         .fill(breadcrumbColor.color)
                         .frame(width: 9, height: 9)
                         .contentShape(Circle())
                 }
-                .menuStyle(.borderlessButton)
-                .fixedSize()
+                .buttonStyle(.plain)
                 .help("Change breadcrumb color")
+                .popover(isPresented: $isShowingColorPicker, arrowEdge: .bottom) {
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text("Color")
+                            .font(.system(size: 11, weight: .semibold))
+                            .foregroundStyle(.secondary)
+
+                        HStack(spacing: 9) {
+                            ForEach(BreadcrumbColor.allCases) { color in
+                                Button {
+                                    onColorChange(color)
+                                    isShowingColorPicker = false
+                                } label: {
+                                    ZStack {
+                                        Circle()
+                                            .fill(color.color)
+                                            .frame(width: 22, height: 22)
+
+                                        if breadcrumbColor == color {
+                                            Image(systemName: "checkmark")
+                                                .font(.system(size: 8, weight: .bold))
+                                                .foregroundStyle(.black.opacity(0.55))
+                                        }
+                                    }
+                                }
+                                .buttonStyle(.plain)
+                                .help(color.name)
+                            }
+                        }
+                    }
+                    .padding(12)
+                }
 
                 VStack(alignment: .leading, spacing: 0) {
                     Text(applicationName)
