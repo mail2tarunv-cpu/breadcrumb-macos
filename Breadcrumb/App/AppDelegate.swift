@@ -25,6 +25,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
     )
 
+    private lazy var diagnosticsController = DiagnosticsWindowController()
+
     private lazy var onboardingController = OnboardingWindowController(
         onFinish: { [weak self] in
             self?.rebuildMenu()
@@ -99,6 +101,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             )
         )
 
+        menu.addItem(
+            NSMenuItem(
+                title: "Context Diagnostics…",
+                action: #selector(openDiagnostics),
+                keyEquivalent: ""
+            )
+        )
+
         if !PermissionManager.hasAccessibilityAccess {
             menu.addItem(.separator())
             menu.addItem(
@@ -136,6 +146,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     @objc private func openHistory() {
         historyController.present()
+    }
+
+    @objc private func openDiagnostics() {
+        diagnosticsController.present()
     }
 
     @objc private func enableWindowAwareness() {
