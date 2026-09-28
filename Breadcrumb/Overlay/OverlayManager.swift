@@ -143,6 +143,13 @@ final class OverlayManager: NSObject {
         records
     }
 
+    func prepareForTermination() {
+        if let activeContextKey {
+            lastLeftAtByContext[activeContextKey] = Date()
+            persistContextHistory()
+        }
+    }
+
     func presentResumeContext() {
         guard let context = contextObserver.captureCurrent() else {
             DiagnosticLog.shared.record(
