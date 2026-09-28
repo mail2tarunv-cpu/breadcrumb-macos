@@ -25,6 +25,7 @@ targets:
         INFOPLIST_KEY_LSUIElement: YES
         INFOPLIST_KEY_CFBundleDisplayName: Breadcrumb
         CODE_SIGN_STYLE: Automatic
+        DEVELOPMENT_TEAM: 86LW992PDB
         ENABLE_HARDENED_RUNTIME: YES
         ENABLE_APP_SANDBOX: NO
 
