@@ -59,6 +59,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private var hotKeyManager: HotKeyManager!
     private var composerController: ComposerController!
+    private var shortcutObserver: NSObjectProtocol?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.accessory)
@@ -81,6 +82,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         hotKeyManager = HotKeyManager {
             ComposerController.presentFromGlobalShortcut()
+        }
+
+        shortcutObserver = NotificationCenter.default.addObserver(
+            forName: HotKeyManager.shortcutDidChange,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            self?.rebuildMenu()
         }
 
         ComposerController.shared = composerController
@@ -110,12 +119,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private func rebuildMenu() {
         let menu = NSMenu()
 
+        let shortcut = CaptureShortcut.current
         let newItem = NSMenuItem(
-            title: "New Breadcrumb",
+            title: "New Breadcrumb    \(shortcut.title)",
             action: #selector(newBreadcrumb),
             keyEquivalent: ""
         )
-        newItem.keyEquivalentModifierMask = [.option]
         menu.addItem(newItem)
 
         menu.addItem(
@@ -126,7 +135,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             )
         )
 
-        let activeCount = overlayManager.allRecords.filter { !$0.isArchived }.count
+        let activeCount = overlayManager.allRecords.filter { !$0.isArchived && !$0.isSnoozed }.count
         let libraryTitle = activeCount == 0
             ? "Open Library…"
             : "Open Library…  \(activeCount)"
