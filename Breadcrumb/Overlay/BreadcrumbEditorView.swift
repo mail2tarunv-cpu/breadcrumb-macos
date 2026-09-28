@@ -9,6 +9,7 @@ struct BreadcrumbEditorView: View {
     let createdAt: Date
     let onSave: (String) -> Void
     let onArchive: () -> Void
+    let onDelete: () -> Void
     let onClose: () -> Void
 
     init(
@@ -18,6 +19,7 @@ struct BreadcrumbEditorView: View {
         createdAt: Date,
         onSave: @escaping (String) -> Void,
         onArchive: @escaping () -> Void,
+        onDelete: @escaping () -> Void,
         onClose: @escaping () -> Void
     ) {
         _text = State(initialValue: text)
@@ -26,52 +28,73 @@ struct BreadcrumbEditorView: View {
         self.createdAt = createdAt
         self.onSave = onSave
         self.onArchive = onArchive
+        self.onDelete = onDelete
         self.onClose = onClose
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack(spacing: 7) {
-                Image(systemName: "circle.dotted")
-                    .foregroundStyle(.secondary)
-
-                Text(applicationName)
-                    .font(.system(size: 12, weight: .medium))
-
-                if let windowTitle, !windowTitle.isEmpty {
-                    Text("·")
-                        .foregroundStyle(.tertiary)
-                    Text(windowTitle)
-                        .lineLimit(1)
-                        .foregroundStyle(.secondary)
+        VStack(alignment: .leading, spacing: 14) {
+            HStack(spacing: 8) {
+                ZStack {
+                    Circle()
+                        .fill(.primary.opacity(0.08))
+                        .frame(width: 25, height: 25)
+                    Circle()
+                        .fill(.primary.opacity(0.78))
+                        .frame(width: 7, height: 7)
                 }
 
-                Spacer(minLength: 8)
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(applicationName)
+                        .font(.system(size: 12, weight: .semibold))
+
+                    if let windowTitle, !windowTitle.isEmpty {
+                        Text(windowTitle)
+                            .font(.system(size: 10))
+                            .foregroundStyle(.tertiary)
+                            .lineLimit(1)
+                    }
+                }
+
+                Spacer()
 
                 Button(action: onClose) {
                     Image(systemName: "xmark")
-                        .font(.system(size: 11, weight: .semibold))
+                        .font(.system(size: 10, weight: .bold))
+                        .frame(width: 24, height: 24)
+                        .background(.quaternary.opacity(0.6))
+                        .clipShape(Circle())
                 }
                 .buttonStyle(.plain)
                 .foregroundStyle(.secondary)
             }
-            .font(.system(size: 12))
 
             TextEditor(text: $text)
-                .font(.system(size: 14))
+                .font(.system(size: 15))
                 .scrollContentBackground(.hidden)
-                .frame(minHeight: 72, maxHeight: 140)
+                .frame(minHeight: 118, maxHeight: 190)
                 .focused($isFocused)
+                .padding(9)
+                .background(.primary.opacity(0.035))
+                .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
 
             HStack {
-                Text(createdAt, style: .relative)
-                    .font(.system(size: 11))
+                Text("Left (createdAt.formatted(.relative(presentation: .named)))")
+                    .font(.system(size: 10.5))
                     .foregroundStyle(.tertiary)
 
                 Spacer()
 
-                Button("Archive", role: .destructive, action: onArchive)
-                    .buttonStyle(.borderless)
+                Menu {
+                    Button("Archive", systemImage: "archivebox", action: onArchive)
+                    Divider()
+                    Button("Delete Permanently", systemImage: "trash", role: .destructive, action: onDelete)
+                } label: {
+                    Image(systemName: "ellipsis")
+                        .frame(width: 26, height: 22)
+                }
+                .menuStyle(.borderlessButton)
+                .fixedSize()
 
                 Button("Save") {
                     let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -83,18 +106,16 @@ struct BreadcrumbEditorView: View {
                 .controlSize(.small)
             }
         }
-        .padding(14)
-        .frame(width: 320)
-        .background(.regularMaterial)
-        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .padding(16)
+        .frame(width: 360)
+        .background(.ultraThinMaterial)
+        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
         .overlay {
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .stroke(.primary.opacity(0.08), lineWidth: 0.5)
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .stroke(.primary.opacity(0.09), lineWidth: 0.7)
         }
         .onAppear {
-            DispatchQueue.main.async {
-                isFocused = true
-            }
+            DispatchQueue.main.async { isFocused = true }
         }
     }
 }
