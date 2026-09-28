@@ -3,10 +3,12 @@ import SwiftUI
 
 private final class MarkerHostingView<Content: View>: NSHostingView<Content> {
     var onClick: (() -> Void)?
+    var onDragBegan: (() -> Void)?
     var onDragEnded: ((CGPoint) -> Void)?
 
     private var mouseDownScreenPoint: CGPoint?
     private var startingWindowOrigin: CGPoint?
+    private var isDragging = false
 
     override func acceptsFirstMouse(for event: NSEvent?) -> Bool {
         true
@@ -22,9 +24,9 @@ private final class MarkerHostingView<Content: View>: NSHostingView<Content> {
     }
 
     override func mouseDown(with event: NSEvent) {
-        NSCursor.closedHand.push()
         mouseDownScreenPoint = NSEvent.mouseLocation
         startingWindowOrigin = window?.frame.origin
+        isDragging = false
     }
 
     override func mouseDragged(with event: NSEvent) {
@@ -37,6 +39,14 @@ private final class MarkerHostingView<Content: View>: NSHostingView<Content> {
         let current = NSEvent.mouseLocation
         let deltaX = current.x - mouseDownScreenPoint.x
         let deltaY = current.y - mouseDownScreenPoint.y
+        let distance = hypot(deltaX, deltaY)
+
+        if !isDragging {
+            guard distance >= 3 else { return }
+            isDragging = true
+            NSCursor.closedHand.push()
+            onDragBegan?()
+        }
 
         window.setFrameOrigin(
             CGPoint(
@@ -47,29 +57,22 @@ private final class MarkerHostingView<Content: View>: NSHostingView<Content> {
     }
 
     override func mouseUp(with event: NSEvent) {
-        NSCursor.pop()
-
         guard let window,
-              let mouseDownScreenPoint else {
+              mouseDownScreenPoint != nil else {
             resetGesture()
             return
         }
 
-        let current = NSEvent.mouseLocation
-        let distance = hypot(
-            current.x - mouseDownScreenPoint.x,
-            current.y - mouseDownScreenPoint.y
-        )
-
-        if distance < 4 {
-            onClick?()
-        } else {
+        if isDragging {
+            NSCursor.pop()
             onDragEnded?(
                 CGPoint(
                     x: window.frame.midX,
                     y: window.frame.midY
                 )
             )
+        } else {
+            onClick?()
         }
 
         resetGesture()
@@ -78,6 +81,7 @@ private final class MarkerHostingView<Content: View>: NSHostingView<Content> {
     private func resetGesture() {
         mouseDownScreenPoint = nil
         startingWindowOrigin = nil
+        isDragging = false
     }
 }
 
@@ -93,6 +97,8 @@ final class OverlayManager: NSObject {
     private var refreshTimer: Timer?
     private var lastDecisionByRecord: [UUID: String] = [:]
     private var editingRecordID: UUID?
+    private var draggingRecordID: UUID?
+    private var lastManuallyPositionedRecordID: UUID?
     private var lastStableTargetContext: ContextSnapshot?
 
     private var autoResumeCandidateKey: String?
@@ -375,7 +381,13 @@ final class OverlayManager: NSObject {
             self?.openEditor(for: record.id)
         }
 
+        host.onDragBegan = { [weak self] in
+            self?.draggingRecordID = record.id
+        }
+
         host.onDragEnded = { [weak self] center in
+            self?.lastManuallyPositionedRecordID = record.id
+            self?.draggingRecordID = nil
             self?.saveDraggedPosition(for: record.id, center: center)
         }
 
@@ -522,8 +534,10 @@ final class OverlayManager: NSObject {
         let matchingRecords = matchingRecords(for: context)
             .sorted { $0.createdAt < $1.createdAt }
 
+        let layoutRecords = matchingRecords.filter { $0.id != draggingRecordID }
+
         let resolvedCenters = resolvedMarkerCenters(
-            for: matchingRecords,
+            for: layoutRecords,
             context: context
         )
 
@@ -532,6 +546,11 @@ final class OverlayManager: NSObject {
 
             if record.id == editingRecordID {
                 panel.orderOut(nil)
+                continue
+            }
+
+            if record.id == draggingRecordID {
+                panel.orderFrontRegardless()
                 continue
             }
 
@@ -833,7 +852,13 @@ final class OverlayManager: NSObject {
             )
         }
 
-        for record in records {
+        let orderedRecords = records.sorted { lhs, rhs in
+            if lhs.id == lastManuallyPositionedRecordID { return true }
+            if rhs.id == lastManuallyPositionedRecordID { return false }
+            return lhs.createdAt < rhs.createdAt
+        }
+
+        for record in orderedRecords {
             let desired = clamped(record.anchorPoint(in: frame))
             var candidates: [CGPoint] = [desired]
 
