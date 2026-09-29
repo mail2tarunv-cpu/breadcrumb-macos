@@ -89,6 +89,7 @@ final class OverlayManager: NSObject {
     private let contextObserver: ContextObserver
     private let store: BreadcrumbStore
     private let editorController = BreadcrumbEditorController()
+    private let hoverPreviewController = BreadcrumbHoverPreviewController()
     private let resumeContextController = ResumeContextController()
     private let contextStackController = ContextStackController()
 
@@ -98,7 +99,6 @@ final class OverlayManager: NSObject {
     private var refreshTimer: Timer?
     private var lastDecisionByRecord: [UUID: String] = [:]
     private var editingRecordID: UUID?
-    private var hoveringRecordID: UUID?
     private var draggingRecordID: UUID?
     private var lastManuallyPositionedRecordID: UUID?
     private var lastStableTargetContext: ContextSnapshot?
@@ -450,16 +450,23 @@ final class OverlayManager: NSObject {
         let host = MarkerHostingView(
             rootView: BreadcrumbMarkerView(
                 text: record.text,
-                applicationName: record.applicationName,
                 breadcrumbColor: record.breadcrumbColor,
                 onHoverChange: { [weak self, weak panel] hovering in
                     guard let self, let panel else { return }
-                    self.hoveringRecordID = hovering ? record.id : nil
-                    self.resizeMarkerPanel(
-                        panel,
-                        expanded: hovering,
-                        text: record.text
+
+                    let anchor = CGPoint(
+                        x: panel.frame.midX,
+                        y: panel.frame.midY
                     )
+
+                    if hovering {
+                        self.hoverPreviewController.scheduleShow(
+                            record: record,
+                            anchor: anchor
+                        )
+                    } else {
+                        self.hoverPreviewController.scheduleHide()
+                    }
                 }
             )
         )
@@ -469,6 +476,7 @@ final class OverlayManager: NSObject {
         }
 
         host.onDragBegan = { [weak self] in
+            self?.hoverPreviewController.dismiss()
             self?.draggingRecordID = record.id
         }
 
@@ -509,18 +517,12 @@ final class OverlayManager: NSObject {
             ].joined(separator: "\n")
         )
 
-        let anchorPoint: CGPoint
-        if hoveringRecordID == id {
-            anchorPoint = CGPoint(
-                x: panel.frame.minX + 10,
-                y: panel.frame.midY
-            )
-        } else {
-            anchorPoint = CGPoint(
-                x: panel.frame.midX,
-                y: panel.frame.midY
-            )
-        }
+        hoverPreviewController.dismiss()
+
+        let anchorPoint = CGPoint(
+            x: panel.frame.midX,
+            y: panel.frame.midY
+        )
 
         editingRecordID = id
         if let current = contextObserver.captureCurrent(),
@@ -618,6 +620,7 @@ final class OverlayManager: NSObject {
         }
 
         guard let context else {
+            hoverPreviewController.dismiss()
             for record in records where !record.isArchived && !record.isDone {
                 hide(record: record, reason: "No focused window context")
             }
@@ -626,6 +629,7 @@ final class OverlayManager: NSObject {
         }
 
         if context.isMinimized {
+            hoverPreviewController.dismiss()
             for record in records where !record.isArchived && !record.isDone {
                 hide(record: record, reason: "Focused target window is minimized")
             }
@@ -659,7 +663,7 @@ final class OverlayManager: NSObject {
                 continue
             }
 
-            if record.id == draggingRecordID || record.id == hoveringRecordID {
+            if record.id == draggingRecordID {
                 panel.orderFrontRegardless()
                 continue
             }
@@ -1053,38 +1057,6 @@ final class OverlayManager: NSObject {
         }
 
         return result
-    }
-
-    private func resizeMarkerPanel(
-        _ panel: NSPanel,
-        expanded: Bool,
-        text: String
-    ) {
-        let collapsed = NSSize(width: 20, height: 20)
-
-        let approximateCharactersPerLine: CGFloat = 34
-        let estimatedLines = max(
-            1,
-            ceil(CGFloat(text.count) / approximateCharactersPerLine)
-        )
-        let previewHeight = min(
-            max(54 + estimatedLines * 17, 72),
-            220
-        )
-        let expandedSize = NSSize(width: 280, height: previewHeight)
-        let targetSize = expanded ? expandedSize : collapsed
-
-        let anchorX = panel.frame.minX
-        let centerY = panel.frame.midY
-
-        let nextFrame = NSRect(
-            x: anchorX,
-            y: centerY - targetSize.height / 2,
-            width: targetSize.width,
-            height: targetSize.height
-        )
-
-        panel.setFrame(nextFrame, display: true, animate: false)
     }
 
     private func reposition(_ panel: NSPanel, center point: CGPoint) {
