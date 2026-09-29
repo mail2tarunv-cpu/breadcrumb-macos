@@ -149,19 +149,14 @@ struct BreadcrumbEditorView: View {
 
             TextEditor(text: $text)
                 .font(.system(size: 14.5))
-                .foregroundStyle(Color.black.opacity(0.88))
+                .foregroundStyle(.primary)
                 .scrollContentBackground(.hidden)
                 .scrollIndicators(.never)
                 .focused($isFocused)
                 .padding(.horizontal, 9)
                 .padding(.vertical, 6)
                 .frame(minHeight: 76, maxHeight: 108)
-                .background(Color.white)
-                .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
-                .overlay {
-                    RoundedRectangle(cornerRadius: 8, style: .continuous)
-                        .stroke(.black.opacity(0.06), lineWidth: 0.5)
-                }
+                .background(Color(nsColor: .windowBackgroundColor))
                 .padding(.horizontal, 10)
                 .padding(.vertical, 3)
 
