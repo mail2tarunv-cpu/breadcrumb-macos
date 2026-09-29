@@ -98,6 +98,7 @@ final class OverlayManager: NSObject {
     private var refreshTimer: Timer?
     private var lastDecisionByRecord: [UUID: String] = [:]
     private var editingRecordID: UUID?
+    private var hoveringRecordID: UUID?
     private var draggingRecordID: UUID?
     private var lastManuallyPositionedRecordID: UUID?
     private var lastStableTargetContext: ContextSnapshot?
@@ -422,7 +423,7 @@ final class OverlayManager: NSObject {
             return
         }
 
-        let size = NSSize(width: 164, height: 34)
+        let size = NSSize(width: 20, height: 20)
         let fallbackPoint = record.anchorPoint(in: nil)
 
         let panel = NSPanel(
@@ -450,7 +451,12 @@ final class OverlayManager: NSObject {
             rootView: BreadcrumbMarkerView(
                 text: record.text,
                 applicationName: record.applicationName,
-                breadcrumbColor: record.breadcrumbColor
+                breadcrumbColor: record.breadcrumbColor,
+                onHoverChange: { [weak self, weak panel] hovering in
+                    guard let self, let panel else { return }
+                    self.hoveringRecordID = hovering ? record.id : nil
+                    self.resizeMarkerPanel(panel, expanded: hovering)
+                }
             )
         )
 
@@ -641,7 +647,7 @@ final class OverlayManager: NSObject {
                 continue
             }
 
-            if record.id == draggingRecordID {
+            if record.id == draggingRecordID || record.id == hoveringRecordID {
                 panel.orderFrontRegardless()
                 continue
             }
@@ -976,8 +982,8 @@ final class OverlayManager: NSObject {
             )
         }
 
-        let markerSize = CGSize(width: 164, height: 34)
-        let verticalStep: CGFloat = 40
+        let markerSize = CGSize(width: 20, height: 20)
+        let verticalStep: CGFloat = 26
         let horizontalPadding: CGFloat = 8
         let verticalPadding: CGFloat = 8
 
@@ -1035,6 +1041,24 @@ final class OverlayManager: NSObject {
         }
 
         return result
+    }
+
+    private func resizeMarkerPanel(_ panel: NSPanel, expanded: Bool) {
+        let collapsed = NSSize(width: 20, height: 20)
+        let expandedSize = NSSize(width: 280, height: 96)
+        let targetSize = expanded ? expandedSize : collapsed
+
+        let anchorX = panel.frame.minX
+        let centerY = panel.frame.midY
+
+        let nextFrame = NSRect(
+            x: anchorX,
+            y: centerY - targetSize.height / 2,
+            width: targetSize.width,
+            height: targetSize.height
+        )
+
+        panel.setFrame(nextFrame, display: true, animate: false)
     }
 
     private func reposition(_ panel: NSPanel, center point: CGPoint) {
