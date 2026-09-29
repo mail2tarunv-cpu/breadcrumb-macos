@@ -455,7 +455,11 @@ final class OverlayManager: NSObject {
                 onHoverChange: { [weak self, weak panel] hovering in
                     guard let self, let panel else { return }
                     self.hoveringRecordID = hovering ? record.id : nil
-                    self.resizeMarkerPanel(panel, expanded: hovering)
+                    self.resizeMarkerPanel(
+                        panel,
+                        expanded: hovering,
+                        text: record.text
+                    )
                 }
             )
         )
@@ -505,10 +509,18 @@ final class OverlayManager: NSObject {
             ].joined(separator: "\n")
         )
 
-        let anchorPoint = CGPoint(
-            x: panel.frame.midX,
-            y: panel.frame.midY
-        )
+        let anchorPoint: CGPoint
+        if hoveringRecordID == id {
+            anchorPoint = CGPoint(
+                x: panel.frame.minX + 10,
+                y: panel.frame.midY
+            )
+        } else {
+            anchorPoint = CGPoint(
+                x: panel.frame.midX,
+                y: panel.frame.midY
+            )
+        }
 
         editingRecordID = id
         if let current = contextObserver.captureCurrent(),
@@ -1043,9 +1055,23 @@ final class OverlayManager: NSObject {
         return result
     }
 
-    private func resizeMarkerPanel(_ panel: NSPanel, expanded: Bool) {
+    private func resizeMarkerPanel(
+        _ panel: NSPanel,
+        expanded: Bool,
+        text: String
+    ) {
         let collapsed = NSSize(width: 20, height: 20)
-        let expandedSize = NSSize(width: 280, height: 96)
+
+        let approximateCharactersPerLine: CGFloat = 34
+        let estimatedLines = max(
+            1,
+            ceil(CGFloat(text.count) / approximateCharactersPerLine)
+        )
+        let previewHeight = min(
+            max(54 + estimatedLines * 17, 72),
+            220
+        )
+        let expandedSize = NSSize(width: 280, height: previewHeight)
         let targetSize = expanded ? expandedSize : collapsed
 
         let anchorX = panel.frame.minX
