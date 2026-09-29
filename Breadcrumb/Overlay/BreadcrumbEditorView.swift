@@ -149,13 +149,21 @@ struct BreadcrumbEditorView: View {
 
             TextEditor(text: $text)
                 .font(.system(size: 14.5))
+                .foregroundStyle(Color.black.opacity(0.88))
                 .scrollContentBackground(.hidden)
                 .scrollIndicators(.never)
                 .focused($isFocused)
-                .padding(.horizontal, 8)
-                .padding(.vertical, 3)
+                .padding(.horizontal, 9)
+                .padding(.vertical, 6)
                 .frame(minHeight: 76, maxHeight: 108)
-                .background(.clear)
+                .background(Color.white)
+                .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                .overlay {
+                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        .stroke(.black.opacity(0.06), lineWidth: 0.5)
+                }
+                .padding(.horizontal, 10)
+                .padding(.vertical, 3)
 
             if isConfirmingDelete {
                 HStack(spacing: 8) {
@@ -213,7 +221,7 @@ struct BreadcrumbEditorView: View {
             }
         }
         .frame(width: 316)
-        .background(.regularMaterial)
+        .background(Color(nsColor: .windowBackgroundColor))
         .clipShape(RoundedRectangle(cornerRadius: 13, style: .continuous))
         .overlay {
             RoundedRectangle(cornerRadius: 13, style: .continuous)
