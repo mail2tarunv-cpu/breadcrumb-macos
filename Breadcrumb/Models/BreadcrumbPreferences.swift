@@ -92,7 +92,7 @@ enum BreadcrumbShadowStrength: String, CaseIterable, Identifiable {
 }
 
 enum BreadcrumbPreferences {
-    static let defaultAccentHexKey = "breadcrumb.appearance.defaultAccentHex"
+    static let defaultAccentColorKey = "breadcrumb.appearance.defaultAccentColor"
     static let markerStyleKey = "breadcrumb.appearance.markerStyle"
     static let markerSizeKey = "breadcrumb.appearance.markerSize"
     static let appearanceModeKey = "breadcrumb.appearance.mode"
@@ -101,11 +101,11 @@ enum BreadcrumbPreferences {
 
     static let appearanceDidChange = Notification.Name("breadcrumb.appearance.changed")
 
-    static let defaultAccentHex = "#D6CCEF"
+    static let defaultAccentColor = BreadcrumbColor.blue.rawValue
 
     static func registerDefaults() {
         UserDefaults.standard.register(defaults: [
-            defaultAccentHexKey: defaultAccentHex,
+            defaultAccentColorKey: defaultAccentColor,
             markerStyleKey: BreadcrumbMarkerStyle.microTab.rawValue,
             markerSizeKey: BreadcrumbMarkerSize.medium.rawValue,
             appearanceModeKey: BreadcrumbAppearanceMode.system.rawValue,
@@ -130,10 +130,10 @@ enum BreadcrumbPreferences {
         UserDefaults.standard.bool(forKey: reducedMotionKey)
     }
 
-    static var defaultAccentColor: Color {
-        BreadcrumbColor.color(
-            fromHex: UserDefaults.standard.string(forKey: defaultAccentHexKey)
-        ) ?? BreadcrumbColor.lavender.color
+    static var defaultBreadcrumbColor: BreadcrumbColor {
+        BreadcrumbColor.migrated(
+            from: UserDefaults.standard.string(forKey: defaultAccentColorKey)
+        )
     }
 
     static func applyAppearance() {
