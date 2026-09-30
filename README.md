@@ -4,7 +4,7 @@ Breadcrumb is a native macOS contextual memory layer.
 
 **Leave a thought where it happened. Breadcrumb brings it back when you return.**
 
-Current beta: **0.9.0 (build 1)**
+Current beta: **0.10.1 (build 3)**
 
 ## What it does
 
@@ -18,13 +18,13 @@ Current beta: **0.9.0 (build 1)**
 - Window-relative breadcrumb positioning
 - Automatic hide/show as context changes
 - Draggable floating breadcrumb markers
-- White marker pills with selectable pastel accent dots
-- Click-to-open inline editor
-- Snooze, archive, restore, and permanent delete
-- Searchable Library grouped by application
-- All / Active / Snoozed / Archived Library filters
+- Small selectable pastel breadcrumb dots with delayed hover previews
+- Click-to-open full editable note
+- Open / Done / Snoozed / Archived lifecycle with reopen, restore, and permanent delete
+- Searchable Library grouped by application and context
+- All / Active / Snoozed / Done / Archived Library filters
 - Pick Up Where I Left Off summary
-- Return-aware automatic resurfacing
+- Return-aware automatic resurfacing with persisted context-leave history
 - Crowded contexts collapse into a compact stack at five or more breadcrumbs
 - Local persistence with last-good backup recovery
 - Privacy-safe support summary for beta reports
