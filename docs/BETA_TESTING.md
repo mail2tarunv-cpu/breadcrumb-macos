@@ -1,6 +1,6 @@
 # Breadcrumb Beta Testing
 
-Breadcrumb 0.9.0 is the first external-style beta candidate.
+Breadcrumb 0.10.1 is the current external-style beta candidate.
 
 ## What to test
 
@@ -11,7 +11,7 @@ Focus on:
 1. Capture a breadcrumb from another app.
 2. Return to that window or tab later.
 3. Edit and move breadcrumbs.
-4. Change the pastel dot color.
+4. Change the micro-tab accent color and appearance.
 5. Snooze, archive, restore, and delete.
 6. Open the Library.
 7. Use Pick Up Where I Left Off.
@@ -46,5 +46,4 @@ The support summary intentionally omits breadcrumb note text and detailed diagno
 - The current package is signed with the developer's local development identity.
 - Broad external distribution still requires Developer ID signing and Apple notarization.
 - Context identity quality varies by app because macOS apps expose Accessibility metadata differently.
-- Cloud sync is not included.
 - Screen capture is not used.
