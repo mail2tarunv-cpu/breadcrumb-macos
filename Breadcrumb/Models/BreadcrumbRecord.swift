@@ -1,4 +1,5 @@
 import Foundation
+import SwiftUI
 
 struct BreadcrumbRecord: Codable, Identifiable, Equatable {
     let id: UUID
@@ -22,6 +23,7 @@ struct BreadcrumbRecord: Codable, Identifiable, Equatable {
     var isArchived: Bool
     var snoozedUntil: Date?
     var colorName: String?
+    var customColorHex: String?
     var completedAt: Date?
 
     init(
@@ -49,6 +51,7 @@ struct BreadcrumbRecord: Codable, Identifiable, Equatable {
         self.isArchived = false
         self.snoozedUntil = nil
         self.colorName = BreadcrumbColor.lavender.rawValue
+        self.customColorHex = nil
         self.completedAt = nil
 
         if let frame = context.windowFrame, frame.width > 0, frame.height > 0 {
@@ -87,7 +90,18 @@ struct BreadcrumbRecord: Codable, Identifiable, Equatable {
 
     var breadcrumbColor: BreadcrumbColor {
         get { BreadcrumbColor(rawValue: colorName ?? "") ?? .lavender }
-        set { colorName = newValue.rawValue }
+        set {
+            colorName = newValue.rawValue
+            customColorHex = nil
+        }
+    }
+
+    var accentColor: Color {
+        BreadcrumbColor.color(fromHex: customColorHex) ?? breadcrumbColor.color
+    }
+
+    mutating func setAccentColor(_ color: Color) {
+        customColorHex = BreadcrumbColor.hex(from: color)
     }
 
     var isSnoozed: Bool {
