@@ -4,13 +4,12 @@ struct BreadcrumbEditorView: View {
     @State private var text: String
     @FocusState private var isFocused: Bool
     @State private var isConfirmingDelete = false
-    @State private var isShowingColorPicker = false
-    @State private var selectedColor: BreadcrumbColor
+    @State private var selectedColor: Color
 
     let applicationName: String
     let windowTitle: String?
     let createdAt: Date
-    let onColorChange: (BreadcrumbColor) -> Void
+    let onColorChange: (Color) -> Void
     let onDone: () -> Void
     let onSave: (String) -> Void
     let onArchive: () -> Void
@@ -23,8 +22,8 @@ struct BreadcrumbEditorView: View {
         applicationName: String,
         windowTitle: String?,
         createdAt: Date,
-        breadcrumbColor: BreadcrumbColor,
-        onColorChange: @escaping (BreadcrumbColor) -> Void,
+        accentColor: Color,
+        onColorChange: @escaping (Color) -> Void,
         onDone: @escaping () -> Void,
         onSave: @escaping (String) -> Void,
         onArchive: @escaping () -> Void,
@@ -36,7 +35,7 @@ struct BreadcrumbEditorView: View {
         self.applicationName = applicationName
         self.windowTitle = windowTitle
         self.createdAt = createdAt
-        _selectedColor = State(initialValue: breadcrumbColor)
+        _selectedColor = State(initialValue: accentColor)
         self.onColorChange = onColorChange
         self.onDone = onDone
         self.onSave = onSave
@@ -49,48 +48,15 @@ struct BreadcrumbEditorView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack(spacing: 8) {
-                Button {
-                    isShowingColorPicker.toggle()
-                } label: {
-                    Circle()
-                        .fill(selectedColor.color)
-                        .frame(width: 9, height: 9)
-                        .contentShape(Circle())
-                }
-                .buttonStyle(.plain)
-                .help("Change breadcrumb color")
-                .popover(isPresented: $isShowingColorPicker, arrowEdge: .bottom) {
-                    VStack(alignment: .leading, spacing: 10) {
-                        Text("Color")
-                            .font(.system(size: 11, weight: .semibold))
-                            .foregroundStyle(.secondary)
-
-                        HStack(spacing: 9) {
-                            ForEach(BreadcrumbColor.allCases) { color in
-                                Button {
-                                    selectedColor = color
-                                    onColorChange(color)
-                                    isShowingColorPicker = false
-                                } label: {
-                                    ZStack {
-                                        Circle()
-                                            .fill(color.color)
-                                            .frame(width: 22, height: 22)
-
-                                        if selectedColor == color {
-                                            Image(systemName: "checkmark")
-                                                .font(.system(size: 8, weight: .bold))
-                                                .foregroundStyle(.black.opacity(0.55))
-                                        }
-                                    }
-                                }
-                                .buttonStyle(.plain)
-                                .help(color.name)
-                            }
-                        }
+                ColorPicker("", selection: $selectedColor, supportsOpacity: false)
+                    .labelsHidden()
+                    .frame(width: 22, height: 22)
+                    .clipShape(Circle())
+                    .contentShape(Circle())
+                    .help("Choose breadcrumb color")
+                    .onChange(of: selectedColor) { _, newColor in
+                        onColorChange(newColor)
                     }
-                    .padding(12)
-                }
 
                 VStack(alignment: .leading, spacing: 0) {
                     Text(applicationName)
@@ -132,6 +98,7 @@ struct BreadcrumbEditorView: View {
                         .contentShape(Rectangle())
                 }
                 .menuStyle(.borderlessButton)
+                .menuIndicator(.hidden)
                 .fixedSize()
 
                 Button(action: onClose) {
