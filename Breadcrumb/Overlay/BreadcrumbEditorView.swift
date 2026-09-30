@@ -215,13 +215,13 @@ struct BreadcrumbEditorView: View {
             }
         }
         .frame(width: 316)
-        .background(Color(nsColor: .windowBackgroundColor))
+        .background(.regularMaterial)
         .clipShape(RoundedRectangle(cornerRadius: 13, style: .continuous))
         .overlay {
             RoundedRectangle(cornerRadius: 13, style: .continuous)
                 .stroke(.primary.opacity(0.08), lineWidth: 0.5)
         }
-        .shadow(radius: 16, y: 7)
+        .shadow(color: .black.opacity(0.16), radius: 16, y: 7)
         .onAppear {
             DispatchQueue.main.async { isFocused = true }
         }
