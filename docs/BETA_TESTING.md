@@ -11,7 +11,7 @@ Focus on:
 1. Capture a breadcrumb from another app.
 2. Return to that window or tab later.
 3. Edit and move breadcrumbs.
-4. Change the micro-tab accent color and appearance.
+4. Change the micro-tab accent color and appearance using the six standard color options.
 5. Snooze, archive, restore, and delete.
 6. Open the Library.
 7. Use Pick Up Where I Left Off.
