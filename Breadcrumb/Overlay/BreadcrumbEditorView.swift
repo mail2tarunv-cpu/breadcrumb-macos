@@ -4,7 +4,9 @@ struct BreadcrumbEditorView: View {
     @State private var text: String
     @FocusState private var isFocused: Bool
     @State private var isConfirmingDelete = false
-    @State private var selectedColor: Color
+    @State private var selectedColorHex: String
+    @AppStorage(BreadcrumbPreferences.reducedMotionKey) private var reducedMotion = false
+    @AppStorage(BreadcrumbPreferences.shadowStrengthKey) private var shadowStrengthRaw = BreadcrumbShadowStrength.standard.rawValue
 
     let applicationName: String
     let windowTitle: String?
@@ -35,7 +37,10 @@ struct BreadcrumbEditorView: View {
         self.applicationName = applicationName
         self.windowTitle = windowTitle
         self.createdAt = createdAt
-        _selectedColor = State(initialValue: accentColor)
+        _selectedColorHex = State(
+            initialValue: BreadcrumbColor.hex(from: accentColor)
+                ?? BreadcrumbPreferences.defaultAccentHex
+        )
         self.onColorChange = onColorChange
         self.onDone = onDone
         self.onSave = onSave
@@ -48,15 +53,32 @@ struct BreadcrumbEditorView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack(spacing: 8) {
-                ColorPicker("", selection: $selectedColor, supportsOpacity: false)
-                    .labelsHidden()
-                    .frame(width: 22, height: 22)
-                    .clipShape(Circle())
-                    .contentShape(Circle())
-                    .help("Choose breadcrumb color")
-                    .onChange(of: selectedColor) { _, newColor in
-                        onColorChange(newColor)
-                    }
+                ColorPicker(
+                    "",
+                    selection: Binding(
+                        get: {
+                            BreadcrumbColor.color(fromHex: selectedColorHex)
+                                ?? BreadcrumbColor.lavender.color
+                        },
+                        set: { newColor in
+                            guard let hex = BreadcrumbColor.hex(from: newColor) else {
+                                return
+                            }
+
+                            selectedColorHex = hex
+                            onColorChange(
+                                BreadcrumbColor.color(fromHex: hex)
+                                    ?? newColor
+                            )
+                        }
+                    ),
+                    supportsOpacity: false
+                )
+                .labelsHidden()
+                .frame(width: 22, height: 22)
+                .clipShape(Circle())
+                .contentShape(Circle())
+                .help("Choose breadcrumb color")
 
                 VStack(alignment: .leading, spacing: 0) {
                     Text(applicationName)
@@ -87,8 +109,12 @@ struct BreadcrumbEditorView: View {
                     Button("Archive", systemImage: "archivebox", action: onArchive)
                     Divider()
                     Button("Delete…", systemImage: "trash", role: .destructive) {
-                        withAnimation(.easeOut(duration: 0.12)) {
+                        if reducedMotion {
                             isConfirmingDelete = true
+                        } else {
+                            withAnimation(.easeOut(duration: 0.12)) {
+                                isConfirmingDelete = true
+                            }
                         }
                     }
                 } label: {
@@ -139,8 +165,12 @@ struct BreadcrumbEditorView: View {
                     Spacer()
 
                     Button("Cancel") {
-                        withAnimation(.easeOut(duration: 0.12)) {
+                        if reducedMotion {
                             isConfirmingDelete = false
+                        } else {
+                            withAnimation(.easeOut(duration: 0.12)) {
+                                isConfirmingDelete = false
+                            }
                         }
                     }
                     .controlSize(.small)
@@ -188,7 +218,13 @@ struct BreadcrumbEditorView: View {
             RoundedRectangle(cornerRadius: 13, style: .continuous)
                 .stroke(.primary.opacity(0.04), lineWidth: 0.5)
         }
-        .shadow(color: .black.opacity(0.13), radius: 14, y: 6)
+        .shadow(
+            color: .black.opacity(
+                (BreadcrumbShadowStrength(rawValue: shadowStrengthRaw) ?? .standard).opacity + 0.02
+            ),
+            radius: (BreadcrumbShadowStrength(rawValue: shadowStrengthRaw) ?? .standard).radius + 9,
+            y: 6
+        )
         .onAppear {
             DispatchQueue.main.async { isFocused = true }
         }
