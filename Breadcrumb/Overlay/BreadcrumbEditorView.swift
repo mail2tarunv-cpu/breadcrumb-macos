@@ -4,14 +4,14 @@ struct BreadcrumbEditorView: View {
     @State private var text: String
     @FocusState private var isFocused: Bool
     @State private var isConfirmingDelete = false
-    @State private var selectedColorHex: String
+    @State private var selectedColor: BreadcrumbColor
     @AppStorage(BreadcrumbPreferences.reducedMotionKey) private var reducedMotion = false
     @AppStorage(BreadcrumbPreferences.shadowStrengthKey) private var shadowStrengthRaw = BreadcrumbShadowStrength.standard.rawValue
 
     let applicationName: String
     let windowTitle: String?
     let createdAt: Date
-    let onColorChange: (Color) -> Void
+    let onColorChange: (BreadcrumbColor) -> Void
     let onDone: () -> Void
     let onSave: (String) -> Void
     let onArchive: () -> Void
@@ -24,8 +24,8 @@ struct BreadcrumbEditorView: View {
         applicationName: String,
         windowTitle: String?,
         createdAt: Date,
-        accentColor: Color,
-        onColorChange: @escaping (Color) -> Void,
+        breadcrumbColor: BreadcrumbColor,
+        onColorChange: @escaping (BreadcrumbColor) -> Void,
         onDone: @escaping () -> Void,
         onSave: @escaping (String) -> Void,
         onArchive: @escaping () -> Void,
@@ -37,10 +37,7 @@ struct BreadcrumbEditorView: View {
         self.applicationName = applicationName
         self.windowTitle = windowTitle
         self.createdAt = createdAt
-        _selectedColorHex = State(
-            initialValue: BreadcrumbColor.hex(from: accentColor)
-                ?? BreadcrumbPreferences.defaultAccentHex
-        )
+        _selectedColor = State(initialValue: breadcrumbColor)
         self.onColorChange = onColorChange
         self.onDone = onDone
         self.onSave = onSave
@@ -53,32 +50,30 @@ struct BreadcrumbEditorView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack(spacing: 8) {
-                ColorPicker(
-                    "",
-                    selection: Binding(
-                        get: {
-                            BreadcrumbColor.color(fromHex: selectedColorHex)
-                                ?? BreadcrumbColor.lavender.color
-                        },
-                        set: { newColor in
-                            guard let hex = BreadcrumbColor.hex(from: newColor) else {
-                                return
-                            }
+                HStack(spacing: 5) {
+                    ForEach(BreadcrumbColor.allCases) { color in
+                        Button {
+                            selectedColor = color
+                            onColorChange(color)
+                        } label: {
+                            ZStack {
+                                Circle()
+                                    .fill(color.color)
+                                    .frame(width: 17, height: 17)
 
-                            selectedColorHex = hex
-                            onColorChange(
-                                BreadcrumbColor.color(fromHex: hex)
-                                    ?? newColor
-                            )
+                                if selectedColor == color {
+                                    Circle()
+                                        .stroke(.primary.opacity(0.75), lineWidth: 1.5)
+                                        .frame(width: 21, height: 21)
+                                }
+                            }
+                            .frame(width: 23, height: 23)
+                            .contentShape(Circle())
                         }
-                    ),
-                    supportsOpacity: false
-                )
-                .labelsHidden()
-                .frame(width: 22, height: 22)
-                .clipShape(Circle())
-                .contentShape(Circle())
-                .help("Choose breadcrumb color")
+                        .buttonStyle(.plain)
+                        .help(color.name)
+                    }
+                }
 
                 VStack(alignment: .leading, spacing: 0) {
                     Text(applicationName)
