@@ -17,17 +17,17 @@ enum BreadcrumbColor: String, Codable, CaseIterable, Identifiable {
     var color: Color {
         switch self {
         case .red:
-            return Color(red: 0.769, green: 0.353, blue: 0.353)
+            return Color(red: 0.855, green: 0.420, blue: 0.420)
         case .orange:
-            return Color(red: 0.820, green: 0.541, blue: 0.247)
+            return Color(red: 0.902, green: 0.612, blue: 0.290)
         case .yellow:
-            return Color(red: 0.761, green: 0.631, blue: 0.227)
+            return Color(red: 0.855, green: 0.725, blue: 0.275)
         case .green:
-            return Color(red: 0.373, green: 0.541, blue: 0.388)
+            return Color(red: 0.420, green: 0.650, blue: 0.455)
         case .blue:
-            return Color(red: 0.365, green: 0.471, blue: 0.651)
+            return Color(red: 0.410, green: 0.565, blue: 0.790)
         case .purple:
-            return Color(red: 0.482, green: 0.384, blue: 0.561)
+            return Color(red: 0.610, green: 0.455, blue: 0.710)
         }
     }
 
