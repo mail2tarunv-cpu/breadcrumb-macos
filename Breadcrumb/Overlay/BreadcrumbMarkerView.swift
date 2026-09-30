@@ -6,19 +6,25 @@ struct BreadcrumbMarkerView: View {
     let onHoverChange: (Bool) -> Void
 
     var body: some View {
-        Circle()
-            .fill(breadcrumbColor.color)
-            .frame(width: 12, height: 12)
-            .overlay {
-                Circle()
-                    .stroke(.black.opacity(0.08), lineWidth: 0.5)
-            }
-            .shadow(color: .black.opacity(0.12), radius: 3, y: 1)
-            .frame(width: 20, height: 20)
-            .contentShape(Circle())
-            .onHover(perform: onHoverChange)
-            .accessibilityElement(children: .ignore)
-            .accessibilityLabel("Breadcrumb: " + text)
-            .accessibilityHint("Hover to preview. Click to edit. Drag to reposition.")
+        ZStack {
+            Circle()
+                .fill(.regularMaterial)
+                .frame(width: 18, height: 18)
+
+            Circle()
+                .fill(breadcrumbColor.color)
+                .frame(width: 14, height: 14)
+                .overlay {
+                    Circle()
+                        .stroke(.primary.opacity(0.16), lineWidth: 0.75)
+                }
+        }
+        .shadow(color: .black.opacity(0.16), radius: 3.5, y: 1.5)
+        .frame(width: 20, height: 20)
+        .contentShape(Circle())
+        .onHover(perform: onHoverChange)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Breadcrumb: " + text)
+        .accessibilityHint("Hover to preview. Click to edit. Drag to reposition.")
     }
 }
