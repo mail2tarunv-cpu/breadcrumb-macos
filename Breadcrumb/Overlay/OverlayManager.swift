@@ -394,10 +394,10 @@ final class OverlayManager: NSObject {
         refresh()
     }
 
-    func updateColor(_ id: UUID, color: Color) {
+    func updateColor(_ id: UUID, color: BreadcrumbColor) {
         guard let index = records.firstIndex(where: { $0.id == id }) else { return }
 
-        records[index].setAccentColor(color)
+        records[index].breadcrumbColor = color
         records[index].updatedAt = Date()
         persist()
         rebuildPanel(for: records[index])
@@ -405,7 +405,7 @@ final class OverlayManager: NSObject {
         DiagnosticLog.shared.record(
             category: "Action",
             summary: "Changed breadcrumb color",
-            detail: "id: \(id.uuidString)\ncolor: \(records[index].customColorHex ?? "custom")"
+            detail: "id: \(id.uuidString)\ncolor: \(color.rawValue)"
         )
 
         refresh(preferredContext: lastStableTargetContext)
