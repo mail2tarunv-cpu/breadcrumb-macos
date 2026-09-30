@@ -67,13 +67,29 @@ enum BreadcrumbColor: String, Codable, CaseIterable, Identifiable {
     }
 
     static func hex(from color: Color) -> String? {
-        guard let converted = NSColor(color).usingColorSpace(.sRGB) else {
+        let source = NSColor(color)
+        guard let converted = source.usingColorSpace(.sRGB)
+                ?? source.usingColorSpace(.deviceRGB) else {
             return nil
         }
 
-        let red = Int(round(converted.redComponent * 255))
-        let green = Int(round(converted.greenComponent * 255))
-        let blue = Int(round(converted.blueComponent * 255))
+        var redComponent: CGFloat = 0
+        var greenComponent: CGFloat = 0
+        var blueComponent: CGFloat = 0
+        var alphaComponent: CGFloat = 0
+
+        guard converted.getRed(
+            &redComponent,
+            green: &greenComponent,
+            blue: &blueComponent,
+            alpha: &alphaComponent
+        ) else {
+            return nil
+        }
+
+        let red = Int(round(redComponent * 255))
+        let green = Int(round(greenComponent * 255))
+        let blue = Int(round(blueComponent * 255))
 
         return String(format: "#%02X%02X%02X", red, green, blue)
     }
