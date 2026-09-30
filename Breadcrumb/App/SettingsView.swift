@@ -5,9 +5,17 @@ import ServiceManagement
 struct SettingsView: View {
     @State private var launchAtLogin = SMAppService.mainApp.status == .enabled
     @State private var launchError: String?
+
     @AppStorage("breadcrumb.resume.autoEnabled") private var autoResumeEnabled = true
     @AppStorage("breadcrumb.resume.cooldownMinutes") private var autoResumeCooldownMinutes = 15.0
     @AppStorage("breadcrumb.capture.shortcut") private var captureShortcutRaw = CaptureShortcut.optionSpace.rawValue
+
+    @AppStorage(BreadcrumbPreferences.defaultAccentHexKey) private var defaultAccentHex = BreadcrumbPreferences.defaultAccentHex
+    @AppStorage(BreadcrumbPreferences.markerStyleKey) private var markerStyleRaw = BreadcrumbMarkerStyle.microTab.rawValue
+    @AppStorage(BreadcrumbPreferences.markerSizeKey) private var markerSizeRaw = BreadcrumbMarkerSize.medium.rawValue
+    @AppStorage(BreadcrumbPreferences.appearanceModeKey) private var appearanceModeRaw = BreadcrumbAppearanceMode.system.rawValue
+    @AppStorage(BreadcrumbPreferences.reducedMotionKey) private var reducedMotion = false
+    @AppStorage(BreadcrumbPreferences.shadowStrengthKey) private var shadowStrengthRaw = BreadcrumbShadowStrength.standard.rawValue
 
     let onOpenLibrary: () -> Void
     let onOpenDiagnostics: () -> Void
@@ -18,6 +26,9 @@ struct SettingsView: View {
             general
                 .tabItem { Label("General", systemImage: "gearshape") }
 
+            appearance
+                .tabItem { Label("Appearance", systemImage: "paintpalette") }
+
             context
                 .tabItem { Label("Context", systemImage: "scope") }
 
@@ -27,7 +38,7 @@ struct SettingsView: View {
             advanced
                 .tabItem { Label("Advanced", systemImage: "wrench.and.screwdriver") }
         }
-        .frame(width: 520, height: 420)
+        .frame(width: 620, height: 500)
     }
 
     private var general: some View {
@@ -68,8 +79,105 @@ struct SettingsView: View {
                 }
             }
 
-            Section {
+            Section("Library") {
                 Button("Open Breadcrumb Library…", action: onOpenLibrary)
+            }
+        }
+        .formStyle(.grouped)
+        .padding(.horizontal, 8)
+    }
+
+    private var appearance: some View {
+        Form {
+            Section("Breadcrumbs") {
+                ColorPicker(
+                    "Default accent color",
+                    selection: Binding(
+                        get: {
+                            BreadcrumbColor.color(fromHex: defaultAccentHex)
+                                ?? BreadcrumbColor.lavender.color
+                        },
+                        set: { color in
+                            if let hex = BreadcrumbColor.hex(from: color) {
+                                defaultAccentHex = hex
+                                BreadcrumbPreferences.notifyAppearanceChanged()
+                            }
+                        }
+                    ),
+                    supportsOpacity: false
+                )
+
+                Picker("Marker style", selection: Binding(
+                    get: {
+                        BreadcrumbMarkerStyle(rawValue: markerStyleRaw) ?? .microTab
+                    },
+                    set: { value in
+                        markerStyleRaw = value.rawValue
+                        BreadcrumbPreferences.notifyAppearanceChanged()
+                    }
+                )) {
+                    ForEach(BreadcrumbMarkerStyle.allCases) { style in
+                        Text(style.title).tag(style)
+                    }
+                }
+
+                Picker("Micro-tab size", selection: Binding(
+                    get: {
+                        BreadcrumbMarkerSize(rawValue: markerSizeRaw) ?? .medium
+                    },
+                    set: { value in
+                        markerSizeRaw = value.rawValue
+                        BreadcrumbPreferences.notifyAppearanceChanged()
+                    }
+                )) {
+                    ForEach(BreadcrumbMarkerSize.allCases) { size in
+                        Text(size.title).tag(size)
+                    }
+                }
+            }
+
+            Section("Interface") {
+                Picker("Appearance", selection: Binding(
+                    get: {
+                        BreadcrumbAppearanceMode(rawValue: appearanceModeRaw) ?? .system
+                    },
+                    set: { value in
+                        appearanceModeRaw = value.rawValue
+                        BreadcrumbPreferences.notifyAppearanceChanged()
+                    }
+                )) {
+                    ForEach(BreadcrumbAppearanceMode.allCases) { mode in
+                        Text(mode.title).tag(mode)
+                    }
+                }
+
+                Toggle("Reduce motion", isOn: Binding(
+                    get: { reducedMotion },
+                    set: { value in
+                        reducedMotion = value
+                        BreadcrumbPreferences.notifyAppearanceChanged()
+                    }
+                ))
+
+                Picker("Shadow strength", selection: Binding(
+                    get: {
+                        BreadcrumbShadowStrength(rawValue: shadowStrengthRaw) ?? .standard
+                    },
+                    set: { value in
+                        shadowStrengthRaw = value.rawValue
+                        BreadcrumbPreferences.notifyAppearanceChanged()
+                    }
+                )) {
+                    ForEach(BreadcrumbShadowStrength.allCases) { strength in
+                        Text(strength.title).tag(strength)
+                    }
+                }
+            }
+
+            Section {
+                Text("Appearance changes apply immediately. The default accent color is used for new breadcrumbs; existing breadcrumbs keep their own selected color.")
+                    .font(.system(size: 11))
+                    .foregroundStyle(.secondary)
             }
         }
         .formStyle(.grouped)
@@ -107,11 +215,11 @@ struct SettingsView: View {
                     }
                 }
 
-                Text("Breadcrumb only resurfaces the summary after you leave a context for the selected amount of time and then return.")
+                Text("Breadcrumb resurfaces a context summary only after you leave it for the selected amount of time and return.")
                     .font(.system(size: 11))
                     .foregroundStyle(.secondary)
 
-                Text("Contexts with 5 or more active breadcrumbs collapse into one compact stack instead of covering the window with pills.")
+                Text("Contexts with 5 or more active breadcrumbs collapse into one compact stack instead of covering the window.")
                     .font(.system(size: 11))
                     .foregroundStyle(.tertiary)
             }
@@ -124,18 +232,18 @@ struct SettingsView: View {
         Form {
             Section("Storage") {
                 LabeledContent("Breadcrumbs") {
-                    Text("On this Mac")
+                    Text("Stored on this Mac")
                         .foregroundStyle(.secondary)
                 }
 
-                LabeledContent("Cloud sync") {
-                    Text("Off")
+                LabeledContent("Recovery") {
+                    Text("Automatic local backup")
                         .foregroundStyle(.secondary)
                 }
             }
 
             Section("Privacy") {
-                Text("No account is required. Breadcrumb notes and window metadata remain local in the current version.")
+                Text("No account is required. Breadcrumb notes and window metadata stay on this Mac. No analytics or automatic diagnostic uploads are used.")
                     .font(.system(size: 11))
                     .foregroundStyle(.secondary)
             }
@@ -162,13 +270,18 @@ struct SettingsView: View {
                     .foregroundStyle(.secondary)
             }
 
-            Section {
+            Section("Onboarding") {
                 Button("Show Welcome Screen Again", action: onShowOnboarding)
             }
 
             Section("About") {
                 LabeledContent("Breadcrumb") {
                     Text(Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "1.0")
+                        .foregroundStyle(.secondary)
+                }
+
+                LabeledContent("Build") {
+                    Text(Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "—")
                         .foregroundStyle(.secondary)
                 }
             }
