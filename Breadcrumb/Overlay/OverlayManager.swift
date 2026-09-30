@@ -89,7 +89,6 @@ final class OverlayManager: NSObject {
     private let contextObserver: ContextObserver
     private let store: BreadcrumbStore
     private let editorController = BreadcrumbEditorController()
-    private let hoverPreviewController = BreadcrumbHoverPreviewController()
     private let resumeContextController = ResumeContextController()
     private let contextStackController = ContextStackController()
 
@@ -423,7 +422,7 @@ final class OverlayManager: NSObject {
             return
         }
 
-        let size = NSSize(width: 20, height: 20)
+        let size = NSSize(width: 88, height: 26)
         let fallbackPoint = record.anchorPoint(in: nil)
 
         let panel = NSPanel(
@@ -451,23 +450,7 @@ final class OverlayManager: NSObject {
             rootView: BreadcrumbMarkerView(
                 text: record.text,
                 breadcrumbColor: record.breadcrumbColor,
-                onHoverChange: { [weak self, weak panel] hovering in
-                    guard let self, let panel else { return }
-
-                    let anchor = CGPoint(
-                        x: panel.frame.midX,
-                        y: panel.frame.midY
-                    )
-
-                    if hovering {
-                        self.hoverPreviewController.scheduleShow(
-                            record: record,
-                            anchor: anchor
-                        )
-                    } else {
-                        self.hoverPreviewController.scheduleHide()
-                    }
-                }
+                onHoverChange: { _ in }
             )
         )
 
@@ -476,7 +459,6 @@ final class OverlayManager: NSObject {
         }
 
         host.onDragBegan = { [weak self] in
-            self?.hoverPreviewController.dismiss()
             self?.draggingRecordID = record.id
         }
 
@@ -516,8 +498,6 @@ final class OverlayManager: NSObject {
                 "context: \(record.contextSummary)"
             ].joined(separator: "\n")
         )
-
-        hoverPreviewController.dismiss()
 
         let anchorPoint = CGPoint(
             x: panel.frame.midX,
@@ -620,7 +600,6 @@ final class OverlayManager: NSObject {
         }
 
         guard let context else {
-            hoverPreviewController.dismiss()
             for record in records where !record.isArchived && !record.isDone {
                 hide(record: record, reason: "No focused window context")
             }
@@ -998,8 +977,8 @@ final class OverlayManager: NSObject {
             )
         }
 
-        let markerSize = CGSize(width: 20, height: 20)
-        let verticalStep: CGFloat = 26
+        let markerSize = CGSize(width: 88, height: 26)
+        let verticalStep: CGFloat = 32
         let horizontalPadding: CGFloat = 8
         let verticalPadding: CGFloat = 8
 
