@@ -95,6 +95,7 @@ final class OverlayManager: NSObject {
     private var records: [BreadcrumbRecord]
     private var panels: [UUID: NSPanel] = [:]
     private var workspaceObserver: NSObjectProtocol?
+    private var appearanceObserver: NSObjectProtocol?
     private var refreshTimer: Timer?
     private var lastDecisionByRecord: [UUID: String] = [:]
     private var editingRecordID: UUID?
@@ -130,11 +131,22 @@ final class OverlayManager: NSObject {
         }
 
         super.init()
+
+        appearanceObserver = NotificationCenter.default.addObserver(
+            forName: BreadcrumbPreferences.appearanceDidChange,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            self?.rebuildAllMarkerPanels()
+        }
     }
 
     deinit {
         if let workspaceObserver {
             NSWorkspace.shared.notificationCenter.removeObserver(workspaceObserver)
+        }
+        if let appearanceObserver {
+            NotificationCenter.default.removeObserver(appearanceObserver)
         }
         refreshTimer?.invalidate()
     }
@@ -414,6 +426,19 @@ final class OverlayManager: NSObject {
         }
     }
 
+    private func rebuildAllMarkerPanels() {
+        for panel in panels.values {
+            panel.orderOut(nil)
+        }
+        panels.removeAll()
+
+        for record in records where !record.isArchived && !record.isDone && record.hasStableContext {
+            createPanelIfNeeded(for: record)
+        }
+
+        refresh(preferredContext: lastStableTargetContext)
+    }
+
     private func createPanelIfNeeded(for record: BreadcrumbRecord) {
         guard panels[record.id] == nil,
               !record.isArchived,
@@ -422,7 +447,7 @@ final class OverlayManager: NSObject {
             return
         }
 
-        let size = NSSize(width: 88, height: 26)
+        let size = BreadcrumbPreferences.markerSize.dimensions
         let fallbackPoint = record.anchorPoint(in: nil)
 
         let panel = NSPanel(
@@ -976,8 +1001,8 @@ final class OverlayManager: NSObject {
             )
         }
 
-        let markerSize = CGSize(width: 88, height: 26)
-        let verticalStep: CGFloat = 32
+        let markerSize = BreadcrumbPreferences.markerSize.dimensions
+        let verticalStep: CGFloat = markerSize.height + 6
         let horizontalPadding: CGFloat = 8
         let verticalPadding: CGFloat = 8
 
