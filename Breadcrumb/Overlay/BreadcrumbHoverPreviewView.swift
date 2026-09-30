@@ -13,7 +13,7 @@ struct BreadcrumbHoverPreviewView: View {
             VStack(alignment: .leading, spacing: 4) {
                 Text(record.text)
                     .font(.system(size: 12.5, weight: .medium))
-                    .foregroundStyle(Color.black.opacity(0.88))
+                    .foregroundStyle(.primary)
                     .fixedSize(horizontal: false, vertical: true)
 
                 HStack(spacing: 4) {
@@ -26,18 +26,18 @@ struct BreadcrumbHoverPreviewView: View {
                     }
                 }
                 .font(.system(size: 9.5, weight: .medium))
-                .foregroundStyle(Color.black.opacity(0.42))
+                .foregroundStyle(.secondary)
             }
         }
         .padding(.horizontal, 11)
         .padding(.vertical, 9)
         .frame(width: 280, alignment: .leading)
-        .background(Color.white.opacity(0.985))
+        .background(.regularMaterial)
         .clipShape(RoundedRectangle(cornerRadius: 11, style: .continuous))
         .overlay {
             RoundedRectangle(cornerRadius: 11, style: .continuous)
-                .stroke(.black.opacity(0.07), lineWidth: 0.5)
+                .stroke(.primary.opacity(0.08), lineWidth: 0.5)
         }
-        .shadow(color: .black.opacity(0.12), radius: 10, y: 4)
+        .shadow(color: .black.opacity(0.14), radius: 12, y: 5)
     }
 }
