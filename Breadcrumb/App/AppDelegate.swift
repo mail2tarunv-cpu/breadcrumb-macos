@@ -72,6 +72,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        BreadcrumbPreferences.registerDefaults()
+        BreadcrumbPreferences.applyAppearance()
         NSApp.setActivationPolicy(.accessory)
 
         configureMenuBar()
