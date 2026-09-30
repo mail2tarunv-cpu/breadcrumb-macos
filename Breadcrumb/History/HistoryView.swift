@@ -155,7 +155,7 @@ private struct BreadcrumbLibraryRow: View {
                             .foregroundStyle(.secondary)
                     } else {
                         Circle()
-                            .fill(record.breadcrumbColor.color)
+                            .fill(record.accentColor)
                             .frame(width: 9, height: 9)
                     }
                 }
