@@ -149,7 +149,7 @@ struct BreadcrumbEditorView: View {
 
             TextEditor(text: $text)
                 .font(.system(size: 14.5))
-                .foregroundStyle(.primary)
+                .foregroundColor(Color(nsColor: .labelColor))
                 .scrollContentBackground(.hidden)
                 .scrollIndicators(.never)
                 .focused($isFocused)
