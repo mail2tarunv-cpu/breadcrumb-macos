@@ -1,82 +1,51 @@
-import Foundation
-import AppKit
 import SwiftUI
 
 enum BreadcrumbColor: String, Codable, CaseIterable, Identifiable {
-    case butter
-    case peach
-    case blush
-    case lavender
-    case sky
-    case mint
-    case sage
+    case red
+    case orange
+    case yellow
+    case green
+    case blue
+    case purple
 
     var id: String { rawValue }
 
     var name: String {
-        switch self {
-        case .butter: return "Butter"
-        case .peach: return "Peach"
-        case .blush: return "Blush"
-        case .lavender: return "Lavender"
-        case .sky: return "Sky"
-        case .mint: return "Mint"
-        case .sage: return "Sage"
-        }
+        rawValue.capitalized
     }
 
     var color: Color {
         switch self {
-        case .butter:
-            return Color(red: 0.96, green: 0.90, blue: 0.72)
-        case .peach:
-            return Color(red: 0.96, green: 0.82, blue: 0.73)
-        case .blush:
-            return Color(red: 0.94, green: 0.80, blue: 0.83)
-        case .lavender:
-            return Color(red: 0.84, green: 0.80, blue: 0.94)
-        case .sky:
-            return Color(red: 0.79, green: 0.87, blue: 0.95)
-        case .mint:
-            return Color(red: 0.78, green: 0.91, blue: 0.85)
-        case .sage:
-            return Color(red: 0.82, green: 0.88, blue: 0.77)
+        case .red:
+            return Color(red: 0.90, green: 0.20, blue: 0.20)
+        case .orange:
+            return Color(red: 0.95, green: 0.45, blue: 0.10)
+        case .yellow:
+            return Color(red: 0.95, green: 0.75, blue: 0.08)
+        case .green:
+            return Color(red: 0.16, green: 0.65, blue: 0.32)
+        case .blue:
+            return Color(red: 0.12, green: 0.45, blue: 0.92)
+        case .purple:
+            return Color(red: 0.50, green: 0.25, blue: 0.85)
         }
     }
 
-    static func color(fromHex hex: String?) -> Color? {
-        guard var value = hex?.trimmingCharacters(in: .whitespacesAndNewlines),
-              !value.isEmpty else {
-            return nil
+    static func migrated(from rawValue: String?) -> BreadcrumbColor {
+        guard let rawValue else { return .blue }
+
+        if let current = BreadcrumbColor(rawValue: rawValue) {
+            return current
         }
 
-        if value.hasPrefix("#") {
-            value.removeFirst()
+        switch rawValue {
+        case "butter": return .yellow
+        case "peach": return .orange
+        case "blush": return .red
+        case "lavender": return .purple
+        case "sky": return .blue
+        case "mint", "sage": return .green
+        default: return .blue
         }
-
-        guard value.count == 6,
-              let rgb = UInt64(value, radix: 16) else {
-            return nil
-        }
-
-        return Color(
-            red: Double((rgb >> 16) & 0xFF) / 255.0,
-            green: Double((rgb >> 8) & 0xFF) / 255.0,
-            blue: Double(rgb & 0xFF) / 255.0
-        )
-    }
-
-    static func hex(from color: Color) -> String? {
-        let source = NSColor(color)
-        guard let converted = source.usingColorSpace(.sRGB)
-                ?? source.usingColorSpace(.deviceRGB) else {
-            return nil
-        }
-
-        let red = Int(round(converted.redComponent * 255))
-        let green = Int(round(converted.greenComponent * 255))
-        let blue = Int(round(converted.blueComponent * 255))
-
-        return String(format: "#%02X%02X%02X", red, green, blue)
     }
 }
