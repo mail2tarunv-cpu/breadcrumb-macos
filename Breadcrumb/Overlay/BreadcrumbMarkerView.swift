@@ -5,26 +5,53 @@ struct BreadcrumbMarkerView: View {
     let breadcrumbColor: BreadcrumbColor
     let onHoverChange: (Bool) -> Void
 
-    var body: some View {
-        ZStack {
-            Circle()
-                .fill(.regularMaterial)
-                .frame(width: 18, height: 18)
+    @State private var isHovering = false
 
+    private var shortText: String {
+        let words = text
+            .split(whereSeparator: { $0.isWhitespace || $0.isNewline })
+            .prefix(2)
+            .map(String.init)
+            .joined(separator: " ")
+
+        return words.isEmpty ? "Note" : words
+    }
+
+    var body: some View {
+        HStack(spacing: 6) {
             Circle()
                 .fill(breadcrumbColor.color)
-                .frame(width: 14, height: 14)
-                .overlay {
-                    Circle()
-                        .stroke(.primary.opacity(0.16), lineWidth: 0.75)
-                }
+                .frame(width: 8, height: 8)
+
+            Text(shortText)
+                .font(.system(size: 11.5, weight: .medium))
+                .foregroundStyle(.primary)
+                .lineLimit(1)
+                .truncationMode(.tail)
         }
-        .shadow(color: .black.opacity(0.16), radius: 3.5, y: 1.5)
-        .frame(width: 20, height: 20)
-        .contentShape(Circle())
-        .onHover(perform: onHoverChange)
+        .padding(.horizontal, 8)
+        .frame(height: 26)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(.regularMaterial)
+        .clipShape(Capsule())
+        .overlay {
+            Capsule()
+                .stroke(.primary.opacity(isHovering ? 0.10 : 0.06), lineWidth: 0.5)
+        }
+        .shadow(
+            color: .black.opacity(isHovering ? 0.16 : 0.10),
+            radius: isHovering ? 6 : 4,
+            y: isHovering ? 2.5 : 1.5
+        )
+        .scaleEffect(isHovering ? 1.02 : 1)
+        .animation(.easeOut(duration: 0.10), value: isHovering)
+        .contentShape(Capsule())
+        .onHover { hovering in
+            isHovering = hovering
+            onHoverChange(hovering)
+        }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("Breadcrumb: " + text)
-        .accessibilityHint("Hover to preview. Click to edit. Drag to reposition.")
+        .accessibilityHint("Click to edit. Drag to reposition.")
     }
 }
