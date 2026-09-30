@@ -608,7 +608,6 @@ final class OverlayManager: NSObject {
         }
 
         if context.isMinimized {
-            hoverPreviewController.dismiss()
             for record in records where !record.isArchived && !record.isDone {
                 hide(record: record, reason: "Focused target window is minimized")
             }
