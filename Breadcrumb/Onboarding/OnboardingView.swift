@@ -25,7 +25,7 @@ struct OnboardingView: View {
                 Text("Leave thoughts where they happen.")
                     .font(.system(size: 24, weight: .semibold))
 
-                Text("Press ((CaptureShortcut(rawValue: captureShortcutRaw) ?? .optionSpace).title) from any app. Breadcrumb remembers the window or tab and brings your thought back when you return.")
+                Text("Press \((CaptureShortcut(rawValue: captureShortcutRaw) ?? .optionSpace).title) from any app. Breadcrumb remembers the window or tab and brings your thought back when you return.")
                     .font(.system(size: 12.5))
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
