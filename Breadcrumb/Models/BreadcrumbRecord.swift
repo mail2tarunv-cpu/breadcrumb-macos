@@ -51,7 +51,9 @@ struct BreadcrumbRecord: Codable, Identifiable, Equatable {
         self.isArchived = false
         self.snoozedUntil = nil
         self.colorName = BreadcrumbColor.lavender.rawValue
-        self.customColorHex = nil
+        self.customColorHex = UserDefaults.standard.string(
+            forKey: BreadcrumbPreferences.defaultAccentHexKey
+        ) ?? BreadcrumbPreferences.defaultAccentHex
         self.completedAt = nil
 
         if let frame = context.windowFrame, frame.width > 0, frame.height > 0 {
