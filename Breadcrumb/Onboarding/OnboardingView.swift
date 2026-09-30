@@ -2,7 +2,7 @@ import SwiftUI
 
 struct OnboardingView: View {
     @AppStorage("breadcrumb.capture.shortcut") private var captureShortcutRaw = CaptureShortcut.optionSpace.rawValue
-    @AppStorage(BreadcrumbPreferences.defaultAccentHexKey) private var defaultAccentHex = BreadcrumbPreferences.defaultAccentHex
+    @AppStorage(BreadcrumbPreferences.defaultAccentColorKey) private var defaultAccentColorRaw = BreadcrumbColor.blue.rawValue
     @AppStorage(BreadcrumbPreferences.markerStyleKey) private var markerStyleRaw = BreadcrumbMarkerStyle.microTab.rawValue
     @AppStorage(BreadcrumbPreferences.markerSizeKey) private var markerSizeRaw = BreadcrumbMarkerSize.medium.rawValue
     @AppStorage(BreadcrumbPreferences.appearanceModeKey) private var appearanceModeRaw = BreadcrumbAppearanceMode.system.rawValue
@@ -45,23 +45,30 @@ struct OnboardingView: View {
                         Text("Default accent")
                             .font(.system(size: 11.5))
                         Spacer()
-                        ColorPicker(
-                            "",
-                            selection: Binding(
-                                get: {
-                                    BreadcrumbColor.color(fromHex: defaultAccentHex)
-                                        ?? BreadcrumbColor.lavender.color
-                                },
-                                set: { color in
-                                    if let hex = BreadcrumbColor.hex(from: color) {
-                                        defaultAccentHex = hex
-                                        BreadcrumbPreferences.notifyAppearanceChanged()
+                        HStack(spacing: 6) {
+                            ForEach(BreadcrumbColor.allCases) { color in
+                                Button {
+                                    defaultAccentColorRaw = color.rawValue
+                                    BreadcrumbPreferences.notifyAppearanceChanged()
+                                } label: {
+                                    ZStack {
+                                        Circle()
+                                            .fill(color.color)
+                                            .frame(width: 17, height: 17)
+
+                                        if BreadcrumbColor.migrated(from: defaultAccentColorRaw) == color {
+                                            Circle()
+                                                .stroke(.primary.opacity(0.8), lineWidth: 1.5)
+                                                .frame(width: 22, height: 22)
+                                        }
                                     }
+                                    .frame(width: 24, height: 24)
+                                    .contentShape(Circle())
                                 }
-                            ),
-                            supportsOpacity: false
-                        )
-                        .labelsHidden()
+                                .buttonStyle(.plain)
+                                .help(color.name)
+                            }
+                        }
                     }
 
                     HStack {
