@@ -2,42 +2,170 @@ import SwiftUI
 
 struct OnboardingView: View {
     @AppStorage("breadcrumb.capture.shortcut") private var captureShortcutRaw = CaptureShortcut.optionSpace.rawValue
+    @AppStorage(BreadcrumbPreferences.defaultAccentHexKey) private var defaultAccentHex = BreadcrumbPreferences.defaultAccentHex
+    @AppStorage(BreadcrumbPreferences.markerStyleKey) private var markerStyleRaw = BreadcrumbMarkerStyle.microTab.rawValue
+    @AppStorage(BreadcrumbPreferences.markerSizeKey) private var markerSizeRaw = BreadcrumbMarkerSize.medium.rawValue
+    @AppStorage(BreadcrumbPreferences.appearanceModeKey) private var appearanceModeRaw = BreadcrumbAppearanceMode.system.rawValue
+    @AppStorage(BreadcrumbPreferences.reducedMotionKey) private var reducedMotion = false
+    @AppStorage(BreadcrumbPreferences.shadowStrengthKey) private var shadowStrengthRaw = BreadcrumbShadowStrength.standard.rawValue
 
     let hasAccessibilityAccess: Bool
     let onEnableAccessibility: () -> Void
     let onFinish: () -> Void
 
     var body: some View {
-        VStack(spacing: 24) {
-            Spacer(minLength: 24)
+        VStack(spacing: 18) {
+            Spacer(minLength: 10)
 
             Image(systemName: "circle.dotted")
-                .font(.system(size: 34, weight: .medium))
+                .font(.system(size: 32, weight: .medium))
                 .foregroundStyle(.primary)
 
-            VStack(spacing: 7) {
+            VStack(spacing: 6) {
                 Text("Leave thoughts where they happen.")
-                    .font(.system(size: 25, weight: .semibold))
+                    .font(.system(size: 24, weight: .semibold))
 
-                Text("Press \((CaptureShortcut(rawValue: captureShortcutRaw) ?? .optionSpace).title) from any app. Breadcrumb remembers the window or tab and brings your thought back when you return.")
-                    .font(.system(size: 13))
+                Text("Press ((CaptureShortcut(rawValue: captureShortcutRaw) ?? .optionSpace).title) from any app. Breadcrumb remembers the window or tab and brings your thought back when you return.")
+                    .font(.system(size: 12.5))
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
                     .lineSpacing(2)
-                    .frame(maxWidth: 390)
+                    .frame(maxWidth: 430)
             }
 
-            HStack(spacing: 28) {
+            HStack(spacing: 24) {
                 step("1", "Capture", (CaptureShortcut(rawValue: captureShortcutRaw) ?? .optionSpace).title)
                 step("2", "Leave", "Keep working")
                 step("3", "Return", "Pick up again")
             }
 
+            GroupBox("Make Breadcrumb yours") {
+                VStack(spacing: 10) {
+                    HStack {
+                        Text("Default accent")
+                            .font(.system(size: 11.5))
+                        Spacer()
+                        ColorPicker(
+                            "",
+                            selection: Binding(
+                                get: {
+                                    BreadcrumbColor.color(fromHex: defaultAccentHex)
+                                        ?? BreadcrumbColor.lavender.color
+                                },
+                                set: { color in
+                                    if let hex = BreadcrumbColor.hex(from: color) {
+                                        defaultAccentHex = hex
+                                        BreadcrumbPreferences.notifyAppearanceChanged()
+                                    }
+                                }
+                            ),
+                            supportsOpacity: false
+                        )
+                        .labelsHidden()
+                    }
+
+                    HStack {
+                        Text("Marker style")
+                            .font(.system(size: 11.5))
+                        Spacer()
+                        Picker("", selection: Binding(
+                            get: {
+                                BreadcrumbMarkerStyle(rawValue: markerStyleRaw) ?? .microTab
+                            },
+                            set: { value in
+                                markerStyleRaw = value.rawValue
+                                BreadcrumbPreferences.notifyAppearanceChanged()
+                            }
+                        )) {
+                            ForEach(BreadcrumbMarkerStyle.allCases) { style in
+                                Text(style.title).tag(style)
+                            }
+                        }
+                        .labelsHidden()
+                        .frame(width: 145)
+                    }
+
+                    HStack {
+                        Text("Micro-tab size")
+                            .font(.system(size: 11.5))
+                        Spacer()
+                        Picker("", selection: Binding(
+                            get: {
+                                BreadcrumbMarkerSize(rawValue: markerSizeRaw) ?? .medium
+                            },
+                            set: { value in
+                                markerSizeRaw = value.rawValue
+                                BreadcrumbPreferences.notifyAppearanceChanged()
+                            }
+                        )) {
+                            ForEach(BreadcrumbMarkerSize.allCases) { size in
+                                Text(size.title).tag(size)
+                            }
+                        }
+                        .labelsHidden()
+                        .frame(width: 145)
+                    }
+
+                    HStack {
+                        Text("Appearance")
+                            .font(.system(size: 11.5))
+                        Spacer()
+                        Picker("", selection: Binding(
+                            get: {
+                                BreadcrumbAppearanceMode(rawValue: appearanceModeRaw) ?? .system
+                            },
+                            set: { value in
+                                appearanceModeRaw = value.rawValue
+                                BreadcrumbPreferences.notifyAppearanceChanged()
+                            }
+                        )) {
+                            ForEach(BreadcrumbAppearanceMode.allCases) { mode in
+                                Text(mode.title).tag(mode)
+                            }
+                        }
+                        .labelsHidden()
+                        .frame(width: 145)
+                    }
+
+                    Toggle("Reduce motion", isOn: Binding(
+                        get: { reducedMotion },
+                        set: { value in
+                            reducedMotion = value
+                            BreadcrumbPreferences.notifyAppearanceChanged()
+                        }
+                    ))
+                    .font(.system(size: 11.5))
+
+                    HStack {
+                        Text("Shadow strength")
+                            .font(.system(size: 11.5))
+                        Spacer()
+                        Picker("", selection: Binding(
+                            get: {
+                                BreadcrumbShadowStrength(rawValue: shadowStrengthRaw) ?? .standard
+                            },
+                            set: { value in
+                                shadowStrengthRaw = value.rawValue
+                                BreadcrumbPreferences.notifyAppearanceChanged()
+                            }
+                        )) {
+                            ForEach(BreadcrumbShadowStrength.allCases) { strength in
+                                Text(strength.title).tag(strength)
+                            }
+                        }
+                        .labelsHidden()
+                        .frame(width: 145)
+                    }
+                }
+                .padding(.vertical, 2)
+            }
+            .frame(maxWidth: 450)
+
             Divider()
-                .frame(maxWidth: 410)
+                .frame(maxWidth: 450)
 
             if hasAccessibilityAccess {
-                VStack(spacing: 12) {
+                VStack(spacing: 10) {
                     Label("Window awareness is enabled", systemImage: "checkmark.circle.fill")
                         .font(.system(size: 12))
                         .foregroundStyle(.secondary)
@@ -48,12 +176,12 @@ struct OnboardingView: View {
                         .keyboardShortcut(.defaultAction)
                 }
             } else {
-                VStack(spacing: 10) {
+                VStack(spacing: 9) {
                     Text("Breadcrumb needs Accessibility permission to know which window a thought belongs to.")
                         .font(.system(size: 11.5))
                         .foregroundStyle(.secondary)
                         .multilineTextAlignment(.center)
-                        .frame(maxWidth: 360)
+                        .frame(maxWidth: 380)
 
                     Button("Enable Window Awareness…", action: onEnableAccessibility)
                         .buttonStyle(.borderedProminent)
@@ -61,10 +189,10 @@ struct OnboardingView: View {
                 }
             }
 
-            Spacer(minLength: 20)
+            Spacer(minLength: 10)
         }
         .padding(.horizontal, 34)
-        .frame(width: 520, height: 430)
+        .frame(width: 560, height: 620)
         .background(Color(nsColor: .windowBackgroundColor))
     }
 
@@ -84,6 +212,6 @@ struct OnboardingView: View {
                 .font(.system(size: 10))
                 .foregroundStyle(.tertiary)
         }
-        .frame(width: 100)
+        .frame(width: 108)
     }
 }
