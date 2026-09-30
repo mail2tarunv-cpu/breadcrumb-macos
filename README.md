@@ -18,7 +18,7 @@ Current beta: **0.10.1 (build 3)**
 - Window-relative breadcrumb positioning
 - Automatic hide/show as context changes
 - Draggable floating breadcrumb markers
-- Small selectable pastel breadcrumb dots with delayed hover previews
+- Compact draggable micro-tabs with customizable accent colors
 - Click-to-open full editable note
 - Open / Done / Snoozed / Archived lifecycle with reopen, restore, and permanent delete
 - Searchable Library grouped by application and context
@@ -113,7 +113,6 @@ See:
 Breadcrumb is local-first.
 
 - No account
-- No cloud backend
 - No third-party analytics
 - No automatic upload of notes or diagnostics
 - No Screen Recording permission in the current version
