@@ -18,7 +18,7 @@ Current beta: **0.10.1 (build 3)**
 - Window-relative breadcrumb positioning
 - Automatic hide/show as context changes
 - Draggable floating breadcrumb markers
-- Compact draggable micro-tabs with customizable accent colors
+- Compact draggable micro-tabs with six standard accent colors
 - Click-to-open full editable note
 - Open / Done / Snoozed / Archived lifecycle with reopen, restore, and permanent delete
 - Searchable Library grouped by application and context
