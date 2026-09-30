@@ -382,10 +382,10 @@ final class OverlayManager: NSObject {
         refresh()
     }
 
-    func updateColor(_ id: UUID, color: BreadcrumbColor) {
+    func updateColor(_ id: UUID, color: Color) {
         guard let index = records.firstIndex(where: { $0.id == id }) else { return }
 
-        records[index].breadcrumbColor = color
+        records[index].setAccentColor(color)
         records[index].updatedAt = Date()
         persist()
         rebuildPanel(for: records[index])
@@ -393,7 +393,7 @@ final class OverlayManager: NSObject {
         DiagnosticLog.shared.record(
             category: "Action",
             summary: "Changed breadcrumb color",
-            detail: "id: \(id.uuidString)\ncolor: \(color.rawValue)"
+            detail: "id: \(id.uuidString)\ncolor: \(records[index].customColorHex ?? "custom")"
         )
 
         refresh(preferredContext: lastStableTargetContext)
@@ -449,7 +449,7 @@ final class OverlayManager: NSObject {
         let host = MarkerHostingView(
             rootView: BreadcrumbMarkerView(
                 text: record.text,
-                breadcrumbColor: record.breadcrumbColor,
+                accentColor: record.accentColor,
                 onHoverChange: { _ in }
             )
         )
