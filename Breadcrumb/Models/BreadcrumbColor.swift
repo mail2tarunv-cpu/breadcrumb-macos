@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 
 enum BreadcrumbColor: String, Codable, CaseIterable, Identifiable {
@@ -40,5 +41,39 @@ enum BreadcrumbColor: String, Codable, CaseIterable, Identifiable {
         case .sage:
             return Color(red: 0.82, green: 0.88, blue: 0.77)
         }
+    }
+
+    static func color(fromHex hex: String?) -> Color? {
+        guard var value = hex?.trimmingCharacters(in: .whitespacesAndNewlines),
+              !value.isEmpty else {
+            return nil
+        }
+
+        if value.hasPrefix("#") {
+            value.removeFirst()
+        }
+
+        guard value.count == 6,
+              let rgb = UInt64(value, radix: 16) else {
+            return nil
+        }
+
+        return Color(
+            red: Double((rgb >> 16) & 0xFF) / 255.0,
+            green: Double((rgb >> 8) & 0xFF) / 255.0,
+            blue: Double(rgb & 0xFF) / 255.0
+        )
+    }
+
+    static func hex(from color: Color) -> String? {
+        guard let converted = NSColor(color).usingColorSpace(.sRGB) else {
+            return nil
+        }
+
+        let red = Int(round(converted.redComponent * 255))
+        let green = Int(round(converted.greenComponent * 255))
+        let blue = Int(round(converted.blueComponent * 255))
+
+        return String(format: "#%02X%02X%02X", red, green, blue)
     }
 }
