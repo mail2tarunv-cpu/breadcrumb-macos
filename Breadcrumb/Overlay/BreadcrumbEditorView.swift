@@ -219,9 +219,9 @@ struct BreadcrumbEditorView: View {
         .clipShape(RoundedRectangle(cornerRadius: 13, style: .continuous))
         .overlay {
             RoundedRectangle(cornerRadius: 13, style: .continuous)
-                .stroke(.primary.opacity(0.08), lineWidth: 0.5)
+                .stroke(.primary.opacity(0.04), lineWidth: 0.5)
         }
-        .shadow(color: .black.opacity(0.16), radius: 16, y: 7)
+        .shadow(color: .black.opacity(0.13), radius: 14, y: 6)
         .onAppear {
             DispatchQueue.main.async { isFocused = true }
         }
