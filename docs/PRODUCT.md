@@ -26,7 +26,6 @@ Breadcrumb is a macOS contextual memory layer that lets people leave a thought o
 
 ## Explicitly out of scope for V1
 - AI
-- Cloud accounts
 - Collaboration
 - Tasks/reminders/calendar
 - Browser extension
