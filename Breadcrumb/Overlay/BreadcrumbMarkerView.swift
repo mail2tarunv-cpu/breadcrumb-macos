@@ -2,7 +2,7 @@ import SwiftUI
 
 struct BreadcrumbMarkerView: View {
     let text: String
-    let breadcrumbColor: BreadcrumbColor
+    let accentColor: Color
     let onHoverChange: (Bool) -> Void
 
     @State private var isHovering = false
@@ -20,7 +20,7 @@ struct BreadcrumbMarkerView: View {
     var body: some View {
         HStack(spacing: 6) {
             Circle()
-                .fill(breadcrumbColor.color)
+                .fill(accentColor)
                 .frame(width: 8, height: 8)
 
             Text(shortText)
