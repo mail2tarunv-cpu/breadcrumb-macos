@@ -28,7 +28,6 @@ Breadcrumb does not use Screen Recording in the current version.
 The current version has:
 
 - no user account
-- no cloud backend
 - no analytics SDK
 - no ad SDK
 - no automatic upload of notes or diagnostics
