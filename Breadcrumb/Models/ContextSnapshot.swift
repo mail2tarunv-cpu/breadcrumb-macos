@@ -65,57 +65,60 @@ struct ContextSnapshot: Equatable {
             return false
         }
 
-        if let savedDocument = normalized(record.documentURL) {
-            if normalized(documentURL) == savedDocument {
-                if sameSession,
-                   let savedTabIndex = record.selectedTabIndex,
-                   let currentTabIndex = selectedTabIndex,
-                   savedTabIndex != currentTabIndex {
-                    return false
-                }
+        let savedDocument = normalized(record.documentURL)
+        let currentDocument = normalized(documentURL)
+        let savedTitle = normalized(record.windowTitle)
+        let currentTitle = normalized(windowTitle)
+        let savedTabTitle = normalized(record.selectedTabTitle)
+        let currentTabTitle = normalized(selectedTabTitle)
 
-                return true
+        func tabMatches() -> Bool {
+            if let savedTabTitle, let currentTabTitle, savedTabTitle != currentTabTitle {
+                return false
             }
 
-            // Some apps expose a document URL inconsistently after either
-            // Breadcrumb or the target app relaunches. In a new process
-            // session, fall back to a strong exact title identity rather
-            // than permanently orphaning a persisted breadcrumb.
-            if !sameSession,
-               let savedTitle = normalized(record.windowTitle),
-               let currentTitle = normalized(windowTitle),
-               savedTitle == currentTitle {
-                if let savedTabTitle = normalized(record.selectedTabTitle),
-                   let currentTabTitle = normalized(selectedTabTitle),
-                   savedTabTitle != currentTabTitle {
-                    return false
-                }
+            if sameSession,
+               let savedTabIndex = record.selectedTabIndex,
+               let currentTabIndex = selectedTabIndex,
+               savedTabIndex != currentTabIndex {
+                return false
+            }
 
-                return true
+            return true
+        }
+
+        // Within the same process, keep the matching strict. This prevents
+        // two windows/documents with similar titles from being conflated.
+        if sameSession {
+            if let savedDocument, let currentDocument, savedDocument == currentDocument {
+                return tabMatches()
+            }
+
+            if let savedTitle, let currentTitle, savedTitle == currentTitle {
+                return tabMatches()
             }
 
             return false
         }
 
-        guard let savedTitle = normalized(record.windowTitle),
-              normalized(windowTitle) == savedTitle else {
-            return false
+        // A relaunch creates a new PID/window number, so those values cannot
+        // be part of the identity. Prefer the strongest stable identifiers.
+        if let savedDocument, let currentDocument, savedDocument == currentDocument {
+            return tabMatches()
         }
 
-        if let savedTabTitle = normalized(record.selectedTabTitle),
-           let currentTabTitle = normalized(selectedTabTitle),
-           savedTabTitle != currentTabTitle {
-            return false
+        if let savedTabTitle, let currentTabTitle, savedTabTitle == currentTabTitle {
+            return tabMatches()
         }
 
-        if sameSession,
-           let savedTabIndex = record.selectedTabIndex,
-           let currentTabIndex = selectedTabIndex,
-           savedTabIndex != currentTabIndex {
-            return false
+        // Safari and several document-based apps can expose a different or
+        // temporarily missing document URL after relaunch. Exact window
+        // title is the final relaunch-safe fallback.
+        if let savedTitle, let currentTitle, savedTitle == currentTitle {
+            return tabMatches()
         }
 
-        return true
+        return false
     }
 
     private func normalized(_ value: String?) -> String? {
