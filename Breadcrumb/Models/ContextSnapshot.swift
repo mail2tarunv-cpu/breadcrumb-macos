@@ -72,11 +72,11 @@ struct ContextSnapshot: Equatable {
         let savedTabTitle = normalized(record.selectedTabTitle)
         let currentTabTitle = normalized(selectedTabTitle)
 
-        func tabMatches() -> Bool {
-            if let savedTabTitle, let currentTabTitle, savedTabTitle != currentTabTitle {
-                return false
-            }
-
+        // Document identity is stronger than presentation metadata. Safari can
+        // restore a page with a new tab title while keeping the same URL.
+        if let savedDocument,
+           let currentDocument,
+           savedDocument == currentDocument {
             if sameSession,
                let savedTabIndex = record.selectedTabIndex,
                let currentTabIndex = selectedTabIndex,
@@ -87,35 +87,20 @@ struct ContextSnapshot: Equatable {
             return true
         }
 
-        // Within the same process, keep the matching strict. This prevents
-        // two windows/documents with similar titles from being conflated.
-        if sameSession {
-            if let savedDocument, let currentDocument, savedDocument == currentDocument {
-                return tabMatches()
-            }
-
-            if let savedTitle, let currentTitle, savedTitle == currentTitle {
-                return tabMatches()
-            }
-
-            return false
+        // If the URL is unavailable or changed during restoration, use the
+        // selected tab title as the next stable identifier.
+        if let savedTabTitle,
+           let currentTabTitle,
+           savedTabTitle == currentTabTitle {
+            return true
         }
 
-        // A relaunch creates a new PID/window number, so those values cannot
-        // be part of the identity. Prefer the strongest stable identifiers.
-        if let savedDocument, let currentDocument, savedDocument == currentDocument {
-            return tabMatches()
-        }
-
-        if let savedTabTitle, let currentTabTitle, savedTabTitle == currentTabTitle {
-            return tabMatches()
-        }
-
-        // Safari and several document-based apps can expose a different or
-        // temporarily missing document URL after relaunch. Exact window
-        // title is the final relaunch-safe fallback.
-        if let savedTitle, let currentTitle, savedTitle == currentTitle {
-            return tabMatches()
+        // Finally use the window title. This is especially useful while a
+        // browser is still restoring its accessibility hierarchy.
+        if let savedTitle,
+           let currentTitle,
+           savedTitle == currentTitle {
+            return true
         }
 
         return false
