@@ -182,6 +182,78 @@ final class BreadcrumbTests: XCTestCase {
         XCTAssertTrue(relaunched.matches(record))
     }
 
+    func testRelaunchSameDocumentDoesNotRequireSameTabTitle() {
+        let frame = CGRect(x: 0, y: 0, width: 1200, height: 800)
+
+        let original = ContextSnapshot(
+            bundleIdentifier: "com.apple.Safari",
+            applicationName: "Safari",
+            windowTitle: "Original title",
+            windowFrame: frame,
+            processIdentifier: 100,
+            windowNumber: 10,
+            documentURL: "https://example.com/page",
+            selectedTabTitle: "Original title",
+            selectedTabIndex: 0
+        )
+
+        let record = BreadcrumbRecord(
+            text: "Return here",
+            context: original,
+            anchorPoint: .zero
+        )
+
+        let relaunched = ContextSnapshot(
+            bundleIdentifier: "com.apple.Safari",
+            applicationName: "Safari",
+            windowTitle: "Updated title",
+            windowFrame: frame,
+            processIdentifier: 200,
+            windowNumber: 55,
+            documentURL: "https://example.com/page",
+            selectedTabTitle: "Updated title",
+            selectedTabIndex: 2
+        )
+
+        XCTAssertTrue(relaunched.matches(record))
+    }
+
+    func testRelaunchCanFallBackToSelectedTabTitleWhenURLChanges() {
+        let frame = CGRect(x: 0, y: 0, width: 1200, height: 800)
+
+        let original = ContextSnapshot(
+            bundleIdentifier: "com.apple.Safari",
+            applicationName: "Safari",
+            windowTitle: "Dashboard",
+            windowFrame: frame,
+            processIdentifier: 100,
+            windowNumber: 10,
+            documentURL: "https://example.com/old",
+            selectedTabTitle: "Project Alpha",
+            selectedTabIndex: 0
+        )
+
+        let record = BreadcrumbRecord(
+            text: "Alpha",
+            context: original,
+            anchorPoint: .zero
+        )
+
+        let relaunched = ContextSnapshot(
+            bundleIdentifier: "com.apple.Safari",
+            applicationName: "Safari",
+            windowTitle: "Dashboard",
+            windowFrame: frame,
+            processIdentifier: 200,
+            windowNumber: 55,
+            documentURL: "https://example.com/new",
+            selectedTabTitle: "Project Alpha",
+            selectedTabIndex: 0
+        )
+
+        XCTAssertTrue(relaunched.matches(record))
+    }
+
     func testSnoozeStateRoundTripsThroughStore() {
         let suiteName = "BreadcrumbTests.Snooze.\(UUID().uuidString)"
         let defaults = UserDefaults(suiteName: suiteName)!
