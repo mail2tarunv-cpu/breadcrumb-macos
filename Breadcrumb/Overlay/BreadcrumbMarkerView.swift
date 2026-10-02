@@ -51,7 +51,7 @@ struct BreadcrumbMarkerView: View {
         }
         .padding(.horizontal, markerStyle == .microTab ? 8 : 10)
         .frame(width: markerSize.dimensions.width, height: markerSize.dimensions.height, alignment: .leading)
-        .background(.regularMaterial)
+         .background(.thinMaterial)
         .clipShape(Capsule())
         .overlay {
             Capsule()
