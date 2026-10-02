@@ -185,8 +185,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         ring.stroke()
 
         NSColor.systemOrange.setFill()
+        // The dot follows the ring's 45° endpoint. Keeping its center on
+        // that endpoint makes the mark read as one intentional symbol.
         NSBezierPath(
-            ovalIn: NSRect(x: 25, y: 25, width: 8, height: 8)
+            ovalIn: NSRect(x: 24, y: 24, width: 8, height: 8)
         ).fill()
 
         image.unlockFocus()
