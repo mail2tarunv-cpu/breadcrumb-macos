@@ -64,10 +64,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var hotKeyManager: HotKeyManager!
     private var composerController: ComposerController!
     private var shortcutObserver: NSObjectProtocol?
+    private var workspaceLaunchObserver: NSObjectProtocol?
+    private var workspaceTerminateObserver: NSObjectProtocol?
 
     deinit {
         if let shortcutObserver {
             NotificationCenter.default.removeObserver(shortcutObserver)
+        }
+        if let workspaceLaunchObserver {
+            NSWorkspace.shared.notificationCenter.removeObserver(workspaceLaunchObserver)
+        }
+        if let workspaceTerminateObserver {
+            NSWorkspace.shared.notificationCenter.removeObserver(workspaceTerminateObserver)
         }
     }
 
@@ -107,6 +115,29 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         ComposerController.shared = composerController
         overlayManager.start()
 
+        workspaceLaunchObserver = NSWorkspace.shared.notificationCenter.addObserver(
+            forName: NSWorkspace.didLaunchApplicationNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] notification in
+            guard let self else { return }
+
+            // Newly launched apps can take a moment before their AX window
+            // hierarchy is queryable. Refresh again after the window exists.
+            self.scheduleContextRefresh()
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) {
+                self.scheduleContextRefresh()
+            }
+        }
+
+        workspaceTerminateObserver = NSWorkspace.shared.notificationCenter.addObserver(
+            forName: NSWorkspace.didTerminateApplicationNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            self?.scheduleContextRefresh()
+        }
+
         if !PermissionManager.hasAccessibilityAccess {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
                 PermissionManager.requestAccessibilityAccess()
@@ -124,12 +155,58 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func configureMenuBar() {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
-        statusItem.button?.image = NSImage(
-            systemSymbolName: "circle.dotted",
-            accessibilityDescription: "Breadcrumb"
-        )
+        statusItem.button?.image = makeMenuBarIcon()
+        statusItem.button?.imageScaling = .scaleProportionallyDown
+        statusItem.button?.toolTip = "Breadcrumb"
 
         rebuildMenu()
+    }
+
+    private func makeMenuBarIcon() -> NSImage {
+        // A small broken ring + dot: the ring represents context, and the
+        // dot represents the thought left there. Draw at 2x and display at
+        // menu-bar size for a cleaner Retina result.
+        let image = NSImage(size: NSSize(width: 36, height: 36))
+        image.lockFocus()
+
+        let center = NSPoint(x: 18, y: 18)
+        let ring = NSBezierPath()
+        ring.lineWidth = 5.0
+        ring.lineCapStyle = .round
+        ring.appendArc(
+            withCenter: center,
+            radius: 12.5,
+            startAngle: 45,
+            endAngle: 320,
+            clockwise: false
+        )
+
+        NSColor.labelColor.setStroke()
+        ring.stroke()
+
+        NSColor.systemOrange.setFill()
+        NSBezierPath(
+            ovalIn: NSRect(x: 25, y: 25, width: 8, height: 8)
+        ).fill()
+
+        image.unlockFocus()
+        image.size = NSSize(width: 18, height: 18)
+        image.isTemplate = false
+        return image
+    }
+
+    private func scheduleContextRefresh() {
+        DispatchQueue.main.async { [weak self] in
+            self?.performContextRefresh()
+        }
+    }
+
+    private func performContextRefresh() {
+        // A short debounce lets the target app finish creating its focused
+        // window before Accessibility is queried.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) { [weak self] in
+            self?.overlayManager.refreshForWorkspaceChange()
+        }
     }
 
     private func rebuildMenu() {
