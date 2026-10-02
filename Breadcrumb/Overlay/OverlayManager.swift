@@ -190,6 +190,10 @@ final class OverlayManager: NSObject {
         )
     }
 
+    func refreshForWorkspaceChange() {
+        refresh()
+    }
+
     func start() {
         for record in records where !record.isArchived && !record.isDone && record.hasStableContext {
             createPanelIfNeeded(for: record)
