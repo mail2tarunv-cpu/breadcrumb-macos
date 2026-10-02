@@ -207,7 +207,7 @@ struct BreadcrumbEditorView: View {
             }
         }
         .frame(width: 316)
-        .background(.regularMaterial)
+         .background(.thinMaterial)
         .clipShape(RoundedRectangle(cornerRadius: 13, style: .continuous))
         .overlay {
             RoundedRectangle(cornerRadius: 13, style: .continuous)
