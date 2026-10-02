@@ -116,7 +116,7 @@ struct ResumeContextView: View {
             .padding(.vertical, 8)
         }
         .frame(width: 390)
-        .background(Color(nsColor: .windowBackgroundColor))
+         .background(.thinMaterial)
         .onExitCommand(perform: onClose)
     }
 }
