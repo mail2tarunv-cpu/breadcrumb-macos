@@ -32,7 +32,7 @@ struct BreadcrumbHoverPreviewView: View {
         .padding(.horizontal, 11)
         .padding(.vertical, 9)
         .frame(width: 280, alignment: .leading)
-        .background(.regularMaterial)
+         .background(.thinMaterial)
         .clipShape(RoundedRectangle(cornerRadius: 11, style: .continuous))
         .overlay {
             RoundedRectangle(cornerRadius: 11, style: .continuous)
