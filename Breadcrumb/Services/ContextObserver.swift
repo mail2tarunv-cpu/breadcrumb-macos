@@ -64,9 +64,24 @@ final class ContextObserver {
         ) ?? false
 
         let tabIdentity = findSelectedTab(in: window)
-        // Prefer the selected tab's URL. The old breadth-first search could
-        // return the URL of a different Safari tab depending on AX tree order.
-        let documentURL = tabIdentity?.documentURL ?? findDocumentURL(in: window)
+
+        // Browser AX trees are not consistent enough to make a generic
+        // "selected tab" walk the primary URL source. For Safari/WebKit,
+        // the focused web area exposes kAXURLAttribute directly. Use that
+        // first, then the focused window, then the selected-tab/tree fallbacks.
+        let focusedElementURL = findFocusedElementURL(in: appElement)
+        let windowURL = copyStringLikeAttribute(
+            window,
+            kAXURLAttribute as CFString
+        ) ?? copyStringLikeAttribute(
+            window,
+            kAXDocumentAttribute as CFString
+        )
+        let documentURL =
+            focusedElementURL
+            ?? windowURL
+            ?? tabIdentity?.documentURL
+            ?? findDocumentURL(in: window)
 
         let windowNumber = findWindowNumber(
             processIdentifier: app.processIdentifier,
@@ -295,6 +310,23 @@ final class ContextObserver {
             y: cocoaY,
             width: size.width,
             height: size.height
+        )
+    }
+
+    private func findFocusedElementURL(in appElement: AXUIElement) -> String? {
+        guard let focused = copyElementAttribute(
+            appElement,
+            kAXFocusedUIElementAttribute as CFString
+        ) else {
+            return nil
+        }
+
+        return copyStringLikeAttribute(
+            focused,
+            kAXURLAttribute as CFString
+        ) ?? copyStringLikeAttribute(
+            focused,
+            kAXDocumentAttribute as CFString
         )
     }
 
