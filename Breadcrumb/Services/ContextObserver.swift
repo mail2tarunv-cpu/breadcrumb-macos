@@ -5,6 +5,7 @@ final class ContextObserver {
     private struct TabIdentity {
         let title: String?
         let index: Int?
+        let documentURL: String?
     }
 
     private var lastFingerprint: String?
@@ -62,8 +63,10 @@ final class ContextObserver {
             kAXMinimizedAttribute as CFString
         ) ?? false
 
-        let documentURL = findDocumentURL(in: window)
         let tabIdentity = findSelectedTab(in: window)
+        // Prefer the selected tab's URL. The old breadth-first search could
+        // return the URL of a different Safari tab depending on AX tree order.
+        let documentURL = tabIdentity?.documentURL ?? findDocumentURL(in: window)
 
         let windowNumber = findWindowNumber(
             processIdentifier: app.processIdentifier,
@@ -227,7 +230,11 @@ final class ContextObserver {
             return nil
         }
 
-        return value as? Bool
+        if let bool = value as? Bool {
+            return bool
+        }
+
+        return (value as? NSNumber)?.boolValue
     }
 
     private func copyElementArrayAttribute(
@@ -337,9 +344,46 @@ final class ContextObserver {
         var queue: [(AXUIElement, Int)] = [(root, 0)]
         var visited = 0
 
-        while !queue.isEmpty, visited < 180 {
+        while !queue.isEmpty, visited < 220 {
             let (element, depth) = queue.removeFirst()
             visited += 1
+
+            // Prefer the explicit AXTabs collection. Apple documents AXTabs
+            // as the accessibility representation for tab controls.
+            let tabs = copyElementArrayAttribute(
+                element,
+                kAXTabsAttribute as CFString
+            )
+
+            if !tabs.isEmpty {
+                let selected = tabs.first {
+                    copyBoolAttribute($0, kAXSelectedAttribute as CFString) == true
+                }
+
+                if let selected {
+                    let index = tabs.firstIndex { CFEqual($0, selected) }
+                    let title = copyStringAttribute(
+                        selected,
+                        kAXTitleAttribute as CFString
+                    ) ?? copyStringAttribute(
+                        selected,
+                        kAXDescriptionAttribute as CFString
+                    )
+                    let documentURL = copyStringLikeAttribute(
+                        selected,
+                        kAXURLAttribute as CFString
+                    ) ?? copyStringLikeAttribute(
+                        selected,
+                        kAXDocumentAttribute as CFString
+                    )
+
+                    return TabIdentity(
+                        title: title,
+                        index: index,
+                        documentURL: documentURL
+                    )
+                }
+            }
 
             let role = copyStringAttribute(
                 element,
@@ -368,8 +412,19 @@ final class ContextObserver {
                         selected,
                         kAXDescriptionAttribute as CFString
                     )
+                    let documentURL = copyStringLikeAttribute(
+                        selected,
+                        kAXURLAttribute as CFString
+                    ) ?? copyStringLikeAttribute(
+                        selected,
+                        kAXDocumentAttribute as CFString
+                    )
 
-                    return TabIdentity(title: title, index: index)
+                    return TabIdentity(
+                        title: title,
+                        index: index,
+                        documentURL: documentURL
+                    )
                 }
             }
 
