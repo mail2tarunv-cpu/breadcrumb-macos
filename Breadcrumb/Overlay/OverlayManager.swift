@@ -944,34 +944,36 @@ final class OverlayManager: NSObject {
             return "Window mismatch: saved \(savedWindow), current \(currentWindow)"
         }
 
-        if let savedDocument = record.documentURL {
-            let currentDocument = context.documentURL ?? "nil"
-            if savedDocument != currentDocument {
-                return "Document mismatch: saved [\(savedDocument)] current [\(currentDocument)]"
+        if let savedDocument = record.documentURL,
+           let currentDocument = context.documentURL,
+           savedDocument == currentDocument {
+            if sameSession,
+               let savedTabIndex = record.selectedTabIndex,
+               let currentTabIndex = context.selectedTabIndex,
+               savedTabIndex != currentTabIndex {
+                return "Selected tab mismatch: saved index \(savedTabIndex), current index \(currentTabIndex)"
             }
-        } else {
-            let savedTitle = record.windowTitle ?? "nil"
-            let currentTitle = context.windowTitle ?? "nil"
 
-            if savedTitle != currentTitle {
-                return "Window title mismatch: saved [\(savedTitle)] current [\(currentTitle)]"
-            }
-        }
-
-        if sameSession,
-           let savedTabIndex = record.selectedTabIndex,
-           let currentTabIndex = context.selectedTabIndex,
-           savedTabIndex != currentTabIndex {
-            return "Selected tab mismatch: saved index \(savedTabIndex), current index \(currentTabIndex)"
+            return "Document matched"
         }
 
         if let savedTabTitle = record.selectedTabTitle,
            let currentTabTitle = context.selectedTabTitle,
-           savedTabTitle != currentTabTitle {
-            return "Selected tab title mismatch: saved [\(savedTabTitle)] current [\(currentTabTitle)]"
+           savedTabTitle == currentTabTitle {
+            return "Selected tab title matched"
         }
 
-        return "Context did not satisfy exact matching"
+        if let savedTitle = record.windowTitle,
+           let currentTitle = context.windowTitle,
+           savedTitle == currentTitle {
+            return "Window title matched"
+        }
+
+        if let savedDocument = record.documentURL {
+            return "Document mismatch: saved [\(savedDocument)] current [\(context.documentURL ?? "nil")]"
+        }
+
+        return "Window title mismatch: saved [\(record.windowTitle ?? "nil")] current [\(context.windowTitle ?? "nil")]"
     }
 
     private func decide(
