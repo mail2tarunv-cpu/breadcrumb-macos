@@ -32,7 +32,7 @@ struct ContextStackView: View {
             }
             .padding(.horizontal, 10)
             .frame(width: 154, height: 34)
-            .background(.regularMaterial)
+             .background(.thinMaterial)
             .clipShape(Capsule())
             .overlay {
                 Capsule()
