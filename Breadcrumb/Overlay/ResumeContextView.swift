@@ -10,113 +10,201 @@ struct ResumeContextView: View {
     let onSnooze: (UUID, Date) -> Void
     let onClose: () -> Void
 
+    @State private var hoveredRecord: UUID?
+
     var body: some View {
         VStack(spacing: 0) {
-            HStack(spacing: 10) {
-                Image(systemName: "arrow.uturn.backward.circle")
-                    .font(.system(size: 17, weight: .medium))
-                    .foregroundStyle(.secondary)
-
-                VStack(alignment: .leading, spacing: 1) {
-                    Text("Pick up where you left off")
-                        .font(.system(size: 13.5, weight: .semibold))
-
-                    HStack(spacing: 4) {
-                        Text(applicationName)
-                        if let contextTitle, !contextTitle.isEmpty {
-                            Text("·")
-                            Text(contextTitle)
-                                .lineLimit(1)
-                        }
-                    }
-                    .font(.system(size: 10.5))
-                    .foregroundStyle(.secondary)
-                }
-
-                Spacer()
-
-                Button(action: onClose) {
-                    Image(systemName: "xmark")
-                        .font(.system(size: 11, weight: .semibold))
-                }
-                .buttonStyle(.borderless)
-            }
-            .padding(.horizontal, 14)
-            .padding(.vertical, 12)
-
-            Divider()
+            header
+            Divider().opacity(0.28)
 
             ScrollView {
-                LazyVStack(spacing: 0) {
+                LazyVStack(spacing: 6) {
                     ForEach(records) { record in
-                    HStack(alignment: .top, spacing: 10) {
-                        Circle()
-                            .fill(record.accentColor)
-                            .frame(width: 6, height: 6)
-                            .padding(.top, 6)
-
-                        VStack(alignment: .leading, spacing: 3) {
-                            Text(record.text)
-                                .font(.system(size: 12.5, weight: .medium))
-                                .lineLimit(2)
-
-                            Text(record.updatedAt, style: .relative)
-                                .font(.system(size: 10))
-                                .foregroundStyle(.tertiary)
-                        }
-
-                        Spacer(minLength: 8)
-
-                        Button("Edit") {
-                            onEdit(record.id)
-                        }
-                        .buttonStyle(.borderless)
-                        .controlSize(.small)
-
-                        Menu {
-                            Button("Mark Done", systemImage: "checkmark.circle") {
-                                onDone(record.id)
-                            }
-                            Divider()
-                            Button("Snooze for 1 Hour", systemImage: "clock") {
-                                onSnooze(record.id, Date().addingTimeInterval(60 * 60))
-                            }
-                            Button("Archive", systemImage: "archivebox") {
-                                onArchive(record.id)
-                            }
-                        } label: {
-                            Image(systemName: "ellipsis")
-                        }
-                        .menuStyle(.borderlessButton)
-                        .fixedSize()
-                    }
-                    .padding(.horizontal, 14)
-                    .padding(.vertical, 10)
-
-                        if record.id != records.last?.id {
-                            Divider().padding(.leading, 30)
-                        }
+                        recordRow(record)
                     }
                 }
+                .padding(10)
             }
+            .scrollIndicators(.never)
             .frame(maxHeight: 320)
 
-            Divider()
+            Divider().opacity(0.28)
 
-            HStack {
-                Text("\(records.count) active breadcrumb\(records.count == 1 ? "" : "s")")
-
-                Spacer()
-
-                Text("Esc to close")
-            }
-            .font(.system(size: 10))
-            .foregroundStyle(.tertiary)
-            .padding(.horizontal, 14)
-            .padding(.vertical, 8)
+            footer
         }
-        .frame(width: 390)
-         .background(.thinMaterial)
+        .frame(width: 382)
+        .background {
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .fill(.ultraThinMaterial)
+                .overlay {
+                    RoundedRectangle(cornerRadius: 18, style: .continuous)
+                        .fill(
+                            LinearGradient(
+                                stops: [
+                                    .init(color: .white.opacity(0.16), location: 0),
+                                    .init(color: .white.opacity(0.045), location: 0.5),
+                                    .init(color: .clear, location: 1)
+                                ],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                }
+                .overlay {
+                    RoundedRectangle(cornerRadius: 18, style: .continuous)
+                        .strokeBorder(
+                            LinearGradient(
+                                colors: [
+                                    .white.opacity(0.28),
+                                    .white.opacity(0.07)
+                                ],
+                                startPoint: .top,
+                                endPoint: .bottom
+                            ),
+                            lineWidth: 0.7
+                        )
+                }
+        }
+        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .shadow(color: .black.opacity(0.20), radius: 22, y: 10)
+        .shadow(color: .black.opacity(0.08), radius: 4, y: 2)
         .onExitCommand(perform: onClose)
+    }
+
+    private var header: some View {
+        HStack(spacing: 11) {
+            ZStack {
+                Circle()
+                    .fill(.white.opacity(0.10))
+                    .frame(width: 32, height: 32)
+
+                Image(systemName: "arrow.uturn.backward")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(.primary.opacity(0.82))
+            }
+
+            VStack(alignment: .leading, spacing: 3) {
+                Text("Pick up where you left off")
+                    .font(.system(size: 13.5, weight: .semibold))
+                    .foregroundStyle(.primary)
+
+                HStack(spacing: 4) {
+                    Text(applicationName)
+                        .fontWeight(.medium)
+
+                    if let contextTitle, !contextTitle.isEmpty {
+                        Text("·")
+                        Text(contextTitle)
+                            .lineLimit(1)
+                    }
+                }
+                .font(.system(size: 10.5))
+                .foregroundStyle(.secondary)
+                .frame(maxWidth: 290, alignment: .leading)
+            }
+
+            Spacer(minLength: 8)
+
+            Button(action: onClose) {
+                Image(systemName: "xmark")
+                    .font(.system(size: 10, weight: .bold))
+                    .frame(width: 24, height: 24)
+                    .background(.white.opacity(0.08), in: Circle())
+            }
+            .buttonStyle(.plain)
+            .help("Close")
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 13)
+    }
+
+    private func recordRow(_ record: BreadcrumbRecord) -> some View {
+        let hovering = hoveredRecord == record.id
+
+        return HStack(spacing: 10) {
+            RoundedRectangle(cornerRadius: 2, style: .continuous)
+                .fill(record.accentColor)
+                .frame(width: 3, height: 30)
+                .shadow(color: record.accentColor.opacity(0.22), radius: 2)
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text(record.text)
+                    .font(.system(size: 12.5, weight: .medium))
+                    .foregroundStyle(.primary)
+                    .lineLimit(2)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+
+                Text(record.updatedAt, style: .relative)
+                    .font(.system(size: 9.5, weight: .regular))
+                    .foregroundStyle(.tertiary)
+            }
+
+            Spacer(minLength: 2)
+
+            if hovering {
+                Button("Edit") {
+                    onEdit(record.id)
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.small)
+                .tint(.primary.opacity(0.8))
+                .transition(.opacity)
+            }
+
+            Menu {
+                Button("Mark Done", systemImage: "checkmark.circle") {
+                    onDone(record.id)
+                }
+                Divider()
+                Button("Snooze for 1 Hour", systemImage: "clock") {
+                    onSnooze(record.id, Date().addingTimeInterval(60 * 60))
+                }
+                Button("Archive", systemImage: "archivebox") {
+                    onArchive(record.id)
+                }
+            } label: {
+                Image(systemName: "ellipsis")
+                    .font(.system(size: 11, weight: .semibold))
+                    .frame(width: 26, height: 26)
+                    .background(.white.opacity(hovering ? 0.10 : 0.055), in: Circle())
+            }
+            .menuStyle(.borderlessButton)
+            .fixedSize()
+        }
+        .padding(.horizontal, 11)
+        .padding(.vertical, 9)
+        .background {
+            RoundedRectangle(cornerRadius: 11, style: .continuous)
+                .fill(.white.opacity(hovering ? 0.075 : 0.035))
+        }
+        .overlay {
+            RoundedRectangle(cornerRadius: 11, style: .continuous)
+                .stroke(.white.opacity(hovering ? 0.11 : 0.035), lineWidth: 0.5)
+        }
+        .contentShape(RoundedRectangle(cornerRadius: 11, style: .continuous))
+        .onHover { isHovering in
+            hoveredRecord = isHovering ? record.id : nil
+        }
+        .animation(.easeOut(duration: 0.12), value: hovering)
+    }
+
+    private var footer: some View {
+        HStack {
+            HStack(spacing: 5) {
+                Circle()
+                    .fill(.primary.opacity(0.22))
+                    .frame(width: 4, height: 4)
+
+                Text("(records.count) active")
+            }
+
+            Spacer()
+
+            Text("Esc to close")
+        }
+        .font(.system(size: 9.5, weight: .medium))
+        .foregroundStyle(.tertiary)
+        .padding(.horizontal, 15)
+        .padding(.vertical, 9)
     }
 }
