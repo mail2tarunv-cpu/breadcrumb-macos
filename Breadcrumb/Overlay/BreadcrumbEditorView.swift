@@ -176,7 +176,7 @@ struct BreadcrumbEditorView: View {
                 .padding(.vertical, 5)
                 .frame(height: 58)
                 .background(Color.clear)
-                 .padding(.horizontal, 9)
+                .padding(.horizontal, 9)
                 .padding(.vertical, 2)
 
             if isConfirmingDelete {
@@ -238,7 +238,7 @@ struct BreadcrumbEditorView: View {
                 .padding(.bottom, 7)
             }
         }
-         .frame(width: 320)
+        .frame(width: 320)
         // Same visual material as the collapsed breadcrumb; the editor is
         // the breadcrumb opened up, not a separate modal surface.
         .background {
