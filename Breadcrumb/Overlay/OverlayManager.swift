@@ -620,8 +620,12 @@ final class OverlayManager: NSObject {
         // the frontmost application. That must never replace the last real
         // target application as the context we use for marker visibility.
         let targetContext: ContextSnapshot? = {
+            // No focused window means the target context is no longer visible
+            // (for example Safari was minimized and the desktop became
+            // frontmost). Do not fall back to the old context here: doing so
+            // leaves its floating pill/card stranded on the desktop.
             guard let captured else {
-                return lastStableTargetContext
+                return nil
             }
 
             guard captured.bundleIdentifier != "com.tarun.breadcrumb" else {
@@ -702,6 +706,8 @@ final class OverlayManager: NSObject {
             for record in records where !record.isArchived && !record.isDone {
                 hide(record: record, reason: "No focused window context")
             }
+            contextStackController.dismiss()
+            resumeContextController.dismiss()
             editorController.dismiss()
             return
         }
