@@ -61,7 +61,7 @@ final class ComposerController {
 
         let panel = ComposerPanel(
             contentRect: NSRect(origin: origin, size: size),
-            styleMask: [.borderless, .nonactivatingPanel],
+            styleMask: [.borderless],
             backing: .buffered,
             defer: false
         )
