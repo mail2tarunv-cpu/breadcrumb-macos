@@ -132,3 +132,4 @@ struct BreadcrumbMarkerView: View {
         .accessibilityHint("Click to edit. Drag to reposition.")
 
 }
+}
