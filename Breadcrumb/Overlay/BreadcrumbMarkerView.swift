@@ -3,11 +3,14 @@ import SwiftUI
 final class BreadcrumbMarkerState: ObservableObject {
     @Published var isColorPickerExpanded = false
     @Published var isDragging = false
+    @Published var isContextExpanded = false
 }
 
 struct BreadcrumbMarkerView: View {
     let text: String
     let accentColor: Color
+    let applicationName: String
+    let contextTitle: String?
     @ObservedObject var state: BreadcrumbMarkerState
     let onHoverChange: (Bool) -> Void
 
@@ -28,6 +31,13 @@ struct BreadcrumbMarkerView: View {
 
     private var shadowStrength: BreadcrumbShadowStrength {
         BreadcrumbShadowStrength(rawValue: shadowStrengthRaw) ?? .standard
+    }
+
+    private var displayContext: String {
+        if let contextTitle, !contextTitle.isEmpty {
+            return contextTitle
+        }
+        return applicationName
     }
 
     private var shortText: String {
@@ -58,9 +68,7 @@ struct BreadcrumbMarkerView: View {
         }
         .padding(.horizontal, 8)
         .frame(
-            width: state.isColorPickerExpanded && markerStyle == .microTab
-                ? markerSize.expandedWidth
-                : markerSize.dimensions.width,
+            width: markerWidth,
             height: markerSize.dimensions.height,
             alignment: .leading
         )
@@ -96,14 +104,29 @@ struct BreadcrumbMarkerView: View {
             reducedMotion ? nil : .easeOut(duration: 0.16),
             value: state.isColorPickerExpanded
         )
+        .animation(
+            reducedMotion ? nil : .easeOut(duration: 0.14),
+            value: state.isContextExpanded
+        )
         .contentShape(Capsule(style: .continuous))
         .onHover { hovering in
             isHovering = hovering
+            state.isContextExpanded = hovering && markerStyle == .microTab && !state.isColorPickerExpanded
             onHoverChange(hovering)
         }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("Breadcrumb: " + text)
         .accessibilityHint("Click the color dot to change color. Click the label to edit. Drag to reposition.")
+    }
+
+    private var markerWidth: CGFloat {
+        if state.isColorPickerExpanded && markerStyle == .microTab {
+            return markerSize.expandedWidth
+        }
+        if state.isContextExpanded && markerStyle == .microTab {
+            return min(max(markerSize.dimensions.width, 150), 190)
+        }
+        return markerSize.dimensions.width
     }
 
     private var markerIdentity: some View {
@@ -128,11 +151,23 @@ struct BreadcrumbMarkerView: View {
                     )
             }
 
-            Text(shortText)
-                .font(.system(size: markerSize.fontSize, weight: .medium))
-                .foregroundStyle(.primary.opacity(0.82))
-                .lineLimit(1)
-                .truncationMode(.tail)
+            VStack(alignment: .leading, spacing: 1) {
+                Text(shortText)
+                    .font(.system(size: markerSize.fontSize, weight: .medium))
+                    .foregroundStyle(.primary.opacity(0.86))
+                    .lineLimit(1)
+                    .truncationMode(.tail)
+
+                if state.isContextExpanded && markerStyle == .microTab {
+                    Text(displayContext)
+                        .font(.system(size: 8.5, weight: .regular))
+                        .foregroundStyle(.secondary.opacity(0.78))
+                        .lineLimit(1)
+                        .truncationMode(.middle)
+                        .transition(.opacity)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
 
