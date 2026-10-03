@@ -631,6 +631,17 @@ final class OverlayManager: NSObject {
             // Accessibility can return a transient browser snapshot while a
             // tab is moving/restoring (missing URL/title/frame identity).
             // Never replace a known-good target with that transient state.
+            // Minimization is an intentional context transition, not a
+            // transient Accessibility state. Hide immediately instead of
+            // waiting for the stability debounce.
+            if captured.isMinimized {
+                pendingTargetContext = nil
+                pendingTargetContextKey = nil
+                pendingTargetContextSince = nil
+                lastStableTargetContext = captured
+                return captured
+            }
+
             guard captured.hasStableIdentity else {
                 return lastStableTargetContext
             }
