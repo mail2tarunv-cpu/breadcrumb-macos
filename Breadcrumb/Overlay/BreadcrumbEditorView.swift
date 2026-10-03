@@ -58,15 +58,21 @@ struct BreadcrumbEditorView: View {
                         } label: {
                             ZStack {
                                 Circle()
-                                    .fill(color.color)
-                                    .frame(width: 15, height: 15)
-
-                                if selectedColor == color {
-                                    Circle()
-                                        .stroke(.white.opacity(0.58), lineWidth: 1.0)
-                                        .frame(width: 20, height: 20)
-                                        .shadow(color: color.color.opacity(0.18), radius: 1.5)
-                                }
+                                    .fill(color.color.opacity(selectedColor == color ? 0.94 : 0.78))
+                                    .frame(width: 14, height: 14)
+                                    .overlay {
+                                        if selectedColor == color {
+                                            Circle()
+                                                .stroke(.white.opacity(0.42), lineWidth: 0.8)
+                                                .frame(width: 18, height: 18)
+                                        }
+                                    }
+                                    .shadow(
+                                        color: selectedColor == color
+                                            ? color.color.opacity(0.16)
+                                            : .clear,
+                                        radius: 1.5
+                                    )
                             }
                             .frame(width: 23, height: 23)
                             .contentShape(Circle())
@@ -82,7 +88,7 @@ struct BreadcrumbEditorView: View {
 
                     if let windowTitle, !windowTitle.isEmpty {
                         Text(windowTitle)
-                            .font(.system(size: 9.25))
+                            .font(.system(size: 9.25, weight: .regular))
                             .foregroundStyle(.tertiary)
                             .lineLimit(1)
                     }
@@ -152,7 +158,7 @@ struct BreadcrumbEditorView: View {
                 HStack(spacing: 8) {
                     VStack(alignment: .leading, spacing: 1) {
                         Text("Delete breadcrumb?")
-                            .font(.system(size: 11.5, weight: .semibold))
+                            .font(.system(size: 11.5, weight: .medium))
                         Text("This can’t be undone.")
                             .font(.system(size: 10))
                             .foregroundStyle(.secondary)
@@ -208,32 +214,20 @@ struct BreadcrumbEditorView: View {
             }
         }
         .frame(width: 316)
+        // Same visual material as the collapsed breadcrumb; the editor is
+        // the breadcrumb opened up, not a separate modal surface.
         .background {
             RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .fill(.ultraThinMaterial)
-                .overlay {
-                    RoundedRectangle(cornerRadius: 16, style: .continuous)
-                        .fill(
-                            LinearGradient(
-                                stops: [
-                                    .init(color: .white.opacity(0.08), location: 0),
-                                    .init(color: .white.opacity(0.018), location: 0.48),
-                                    .init(color: .clear, location: 1)
-                                ],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                        )
-                }
+                .fill(.ultraThinMaterial.opacity(0.72))
         }
         .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
         .shadow(
-            color: .black.opacity(0.16),
-            radius: 15,
+            color: .black.opacity(0.13),
+            radius: 16,
             y: 7
         )
         .shadow(
-            color: .black.opacity(0.055),
+            color: .black.opacity(0.04),
             radius: 3,
             y: 1
         )
