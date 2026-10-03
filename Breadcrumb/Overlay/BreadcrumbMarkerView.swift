@@ -126,6 +126,7 @@ struct BreadcrumbMarkerView: View {
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("Breadcrumb: " + text)
         .accessibilityHint("Click the color dot to change color. Click the label to edit. Drag to reposition.")
+    }
 
     private var markerIdentity: some View {
         HStack(spacing: markerStyle == .microTab ? 6 : 0) {
