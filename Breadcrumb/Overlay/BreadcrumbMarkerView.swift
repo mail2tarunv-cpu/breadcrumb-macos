@@ -1,8 +1,14 @@
 import SwiftUI
 
+final class BreadcrumbMarkerState: ObservableObject {
+    @Published var isColorPickerExpanded = false
+    @Published var isDragging = false
+}
+
 struct BreadcrumbMarkerView: View {
     let text: String
     let accentColor: Color
+    @ObservedObject var state: BreadcrumbMarkerState
     let onHoverChange: (Bool) -> Void
 
     @AppStorage(BreadcrumbPreferences.markerStyleKey) private var markerStyleRaw = BreadcrumbMarkerStyle.microTab.rawValue
@@ -25,10 +31,9 @@ struct BreadcrumbMarkerView: View {
     }
 
     private var shortText: String {
-        let count = markerStyle == .microTab ? 2 : 3
         let words = text
             .split(whereSeparator: { $0.isWhitespace || $0.isNewline })
-            .prefix(count)
+            .prefix(markerStyle == .microTab ? 2 : 3)
             .map(String.init)
             .joined(separator: " ")
 
@@ -36,6 +41,93 @@ struct BreadcrumbMarkerView: View {
     }
 
     var body: some View {
+        HStack(spacing: 0) {
+            markerIdentity
+
+            if state.isColorPickerExpanded && markerStyle == .microTab {
+                Divider()
+                    .frame(height: 14)
+                    .opacity(0.28)
+                    .padding(.horizontal, 8)
+
+                colorPalette
+                    .transition(.opacity.combined(with: .scale(scale: 0.94, anchor: .leading)))
+            }
+        }
+        .padding(.horizontal, 9)
+        .frame(
+            width: state.isColorPickerExpanded && markerStyle == .microTab
+                ? markerSize.expandedWidth
+                : markerSize.dimensions.width,
+            height: markerSize.dimensions.height,
+            alignment: .leading
+        )
+        .background {
+            Capsule()
+                .fill(.ultraThinMaterial)
+                .overlay {
+                    Capsule()
+                        .fill(
+                            LinearGradient(
+                                stops: [
+                                    .init(color: .white.opacity(state.isDragging ? 0.22 : 0.14), location: 0),
+                                    .init(color: .white.opacity(0.045), location: 0.5),
+                                    .init(color: .clear, location: 1)
+                                ],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                }
+        }
+        .clipShape(Capsule())
+        .overlay {
+            Capsule()
+                .strokeBorder(
+                    .white.opacity(isHovering || state.isDragging ? 0.24 : 0.15),
+                    lineWidth: 0.55
+                )
+        }
+        .shadow(
+            color: .black.opacity(
+                state.isDragging
+                    ? min(shadowStrength.opacity + 0.10, 0.28)
+                    : isHovering
+                        ? min(shadowStrength.opacity + 0.025, 0.17)
+                        : min(shadowStrength.opacity, 0.13)
+            ),
+            radius: state.isDragging
+                ? shadowStrength.radius + 5
+                : isHovering
+                    ? shadowStrength.radius + 1
+                    : shadowStrength.radius,
+            y: state.isDragging ? 5 : 2
+        )
+        .scaleEffect(
+            reducedMotion
+                ? 1
+                : state.isDragging
+                    ? 1.015
+                    : 1
+        )
+        .animation(
+            reducedMotion ? nil : .easeOut(duration: 0.14),
+            value: state.isDragging
+        )
+        .animation(
+            reducedMotion ? nil : .easeOut(duration: 0.16),
+            value: state.isColorPickerExpanded
+        )
+        .contentShape(Capsule())
+        .onHover { hovering in
+            isHovering = hovering
+            onHoverChange(hovering)
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Breadcrumb: " + text)
+        .accessibilityHint("Click the color dot to change color. Click the label to edit. Drag to reposition.")
+
+    private var markerIdentity: some View {
         HStack(spacing: markerStyle == .microTab ? 6 : 0) {
             if markerStyle == .microTab {
                 Circle()
@@ -43,7 +135,7 @@ struct BreadcrumbMarkerView: View {
                         RadialGradient(
                             colors: [
                                 accentColor.opacity(0.98),
-                                accentColor.opacity(0.72)
+                                accentColor.opacity(0.68)
                             ],
                             center: .center,
                             startRadius: 0,
@@ -56,80 +148,35 @@ struct BreadcrumbMarkerView: View {
                     )
                     .overlay {
                         Circle()
-                            .stroke(.white.opacity(0.32), lineWidth: 0.5)
+                            .stroke(.white.opacity(0.28), lineWidth: 0.5)
                     }
-                    .shadow(color: accentColor.opacity(0.28), radius: 2, y: 0.5)
+                    .shadow(
+                        color: accentColor.opacity(0.22),
+                        radius: 2,
+                        y: 0.5
+                    )
             }
 
             Text(shortText)
                 .font(.system(size: markerSize.fontSize, weight: .medium))
-                .foregroundStyle(.primary)
+                .foregroundStyle(.primary.opacity(0.88))
                 .lineLimit(1)
                 .truncationMode(.tail)
         }
-        .padding(.horizontal, markerStyle == .microTab ? 9 : 10)
-        .frame(
-            width: markerSize.dimensions.width,
-            height: markerSize.dimensions.height,
-            alignment: .leading
-        )
-        .background {
-            Capsule()
-                .fill(.ultraThinMaterial)
-                .overlay {
-                    Capsule()
-                        .fill(
-                            LinearGradient(
-                                stops: [
-                                    .init(color: .white.opacity(0.16), location: 0),
-                                    .init(color: .white.opacity(0.04), location: 0.48),
-                                    .init(color: .clear, location: 1)
-                                ],
-                                startPoint: .top,
-                                endPoint: .bottom
-                            )
-                        )
-                }
-        }
-        .clipShape(Capsule())
-        .overlay {
-            Capsule()
-                .strokeBorder(
-                    LinearGradient(
-                        colors: [
-                            .white.opacity(isHovering ? 0.34 : 0.22),
-                            .white.opacity(0.06)
-                        ],
-                        startPoint: .top,
-                        endPoint: .bottom
-                    ),
-                    lineWidth: 0.65
-                )
-        }
-        .shadow(
-            color: .black.opacity(
-                isHovering
-                    ? min(shadowStrength.opacity + 0.05, 0.24)
-                    : min(shadowStrength.opacity + 0.015, 0.20)
-            ),
-            radius: isHovering
-                ? shadowStrength.radius + 2
-                : shadowStrength.radius + 0.5,
-            y: isHovering ? 3 : 2
-        )
-        .scaleEffect(reducedMotion ? 1 : (isHovering ? 1.018 : 1))
-        .animation(
-            reducedMotion ? nil : .easeOut(duration: 0.10),
-            value: isHovering
-        )
-        .contentShape(Capsule())
-        .onHover { hovering in
-            isHovering = hovering
-            onHoverChange(hovering)
-        }
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel("Breadcrumb: " + text)
-        .accessibilityHint("Click to edit. Drag to reposition.")
+    }
 
-}
+    private var colorPalette: some View {
+        HStack(spacing: 5) {
+            ForEach(BreadcrumbColor.allCases) { color in
+                Circle()
+                    .fill(color.color)
+                    .frame(width: 13, height: 13)
+                    .overlay {
+                        Circle()
+                            .stroke(.white.opacity(0.24), lineWidth: 0.45)
+                    }
+                    .shadow(color: color.color.opacity(0.16), radius: 1.5, y: 0.5)
+            }
+        }
+    }
 }
