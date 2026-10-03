@@ -611,21 +611,28 @@ final class OverlayManager: NSObject {
         let captured = preferredContext ?? contextObserver.captureCurrent()
         let context: ContextSnapshot?
 
-        if editingRecordID != nil {
-            if let captured,
-               captured.bundleIdentifier != "com.tarun.breadcrumb" {
-                lastStableTargetContext = captured
-                context = captured
-            } else {
-                context = lastStableTargetContext
+        // Breadcrumb is an accessory app. Opening its menu, library, editor,
+        // or another Breadcrumb-owned panel can temporarily make Breadcrumb
+        // the frontmost application. That must never replace the last real
+        // target application as the context we use for marker visibility.
+        let targetContext: ContextSnapshot? = {
+            guard let captured else {
+                return lastStableTargetContext
             }
+
+            guard captured.bundleIdentifier != "com.tarun.breadcrumb" else {
+                return lastStableTargetContext
+            }
+
+            lastStableTargetContext = captured
+            return captured
+        }()
+
+        if editingRecordID != nil {
+            context = targetContext
             hideEditingPanel()
         } else {
-            context = captured
-            if let captured,
-               captured.bundleIdentifier != "com.tarun.breadcrumb" {
-                lastStableTargetContext = captured
-            }
+            context = targetContext
         }
 
         guard let context else {
