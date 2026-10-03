@@ -57,11 +57,13 @@ final class ResumeContextController {
         panel.standardWindowButton(.closeButton)?.isHidden = true
         panel.standardWindowButton(.miniaturizeButton)?.isHidden = true
         panel.standardWindowButton(.zoomButton)?.isHidden = true
-        panel.backgroundColor = .windowBackgroundColor
+        panel.isOpaque = false
+        panel.backgroundColor = .clear
         panel.hasShadow = true
         panel.level = .floating
         panel.collectionBehavior = [.moveToActiveSpace, .fullScreenAuxiliary]
         panel.hidesOnDeactivate = false
+        panel.isMovableByWindowBackground = false
         panel.isReleasedWhenClosed = false
 
         let view = ResumeContextView(
