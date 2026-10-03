@@ -22,7 +22,7 @@ final class BreadcrumbEditorController {
     ) {
         dismiss()
 
-        let size = NSSize(width: 292, height: 132)
+        let size = NSSize(width: 320, height: 158)
         let preferred = NSPoint(
             x: anchorPoint.x + 12,
             y: anchorPoint.y - size.height / 2
