@@ -103,10 +103,23 @@ final class ComposerController {
         )
 
         panel.contentView = NSHostingView(rootView: view)
-        panel.orderFrontRegardless()
-        panel.makeKey()
-
         self.panel = panel
+
+        // The composer is invoked from a global shortcut while another app
+        // owns focus. Explicitly activate Breadcrumb before making the text
+        // field first responder; otherwise the panel can appear correctly but
+        // the first keystroke is swallowed until the user clicks.
+        NSApp.activate(ignoringOtherApps: true)
+        panel.orderFrontRegardless()
+        panel.makeKeyAndOrderFront(nil)
+
+        DispatchQueue.main.async {
+            if let contentView = panel.contentView {
+                panel.makeFirstResponder(
+                    contentView.findFirstResponderCandidate()
+                )
+            }
+        }
     }
 
     func dismiss() {
