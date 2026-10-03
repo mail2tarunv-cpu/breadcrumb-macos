@@ -113,13 +113,6 @@ final class ComposerController {
         panel.orderFrontRegardless()
         panel.makeKeyAndOrderFront(nil)
 
-        DispatchQueue.main.async {
-            if let contentView = panel.contentView {
-                panel.makeFirstResponder(
-                    contentView.findFirstResponderCandidate()
-                )
-            }
-        }
     }
 
     func dismiss() {
