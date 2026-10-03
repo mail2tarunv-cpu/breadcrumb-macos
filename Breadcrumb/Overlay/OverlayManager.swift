@@ -707,9 +707,15 @@ final class OverlayManager: NSObject {
         }
 
         if context.isMinimized {
+            // A minimized target invalidates every floating surface tied to it.
+            // Dismiss the context card/stack immediately as well as the pills;
+            // otherwise those independent panels can remain visible after the
+            // target window disappears.
             for record in records where !record.isArchived && !record.isDone {
                 hide(record: record, reason: "Focused target window is minimized")
             }
+            contextStackController.dismiss()
+            resumeContextController.dismiss()
             editorController.dismiss()
             return
         }
