@@ -3,14 +3,11 @@ import SwiftUI
 final class BreadcrumbMarkerState: ObservableObject {
     @Published var isColorPickerExpanded = false
     @Published var isDragging = false
-    @Published var isContextExpanded = false
-}
+ }
 
 struct BreadcrumbMarkerView: View {
     let text: String
     let accentColor: Color
-    let applicationName: String
-    let contextTitle: String?
     @ObservedObject var state: BreadcrumbMarkerState
     let onHoverChange: (Bool) -> Void
 
@@ -31,13 +28,6 @@ struct BreadcrumbMarkerView: View {
 
     private var shadowStrength: BreadcrumbShadowStrength {
         BreadcrumbShadowStrength(rawValue: shadowStrengthRaw) ?? .standard
-    }
-
-    private var displayContext: String {
-        if let contextTitle, !contextTitle.isEmpty {
-            return "(applicationName) · (contextTitle)"
-        }
-        return applicationName
     }
 
     private var shortText: String {
@@ -75,7 +65,11 @@ struct BreadcrumbMarkerView: View {
         // The surface should read as atmosphere, not as a drawn button.
         .background {
             Capsule(style: .continuous)
-                .fill(.ultraThinMaterial.opacity(state.isDragging ? 0.62 : 0.44))
+                .fill(.ultraThinMaterial.opacity(state.isDragging ? 0.76 : 0.62))
+                .overlay {
+                    Capsule(style: .continuous)
+                        .fill(.white.opacity(state.isDragging ? 0.045 : 0.025))
+                }
         }
         .clipShape(Capsule(style: .continuous))
         .shadow(
@@ -104,14 +98,9 @@ struct BreadcrumbMarkerView: View {
             reducedMotion ? nil : .easeOut(duration: 0.16),
             value: state.isColorPickerExpanded
         )
-        .animation(
-            reducedMotion ? nil : .easeOut(duration: 0.14),
-            value: state.isContextExpanded
-        )
-        .contentShape(Capsule(style: .continuous))
+         .contentShape(Capsule(style: .continuous))
         .onHover { hovering in
             isHovering = hovering
-            state.isContextExpanded = hovering && markerStyle == .microTab && !state.isColorPickerExpanded
             onHoverChange(hovering)
         }
         .accessibilityElement(children: .ignore)
@@ -122,9 +111,6 @@ struct BreadcrumbMarkerView: View {
     private var markerWidth: CGFloat {
         if state.isColorPickerExpanded && markerStyle == .microTab {
             return markerSize.expandedWidth
-        }
-        if state.isContextExpanded && markerStyle == .microTab {
-            return min(max(markerSize.dimensions.width, 150), 190)
         }
         return markerSize.dimensions.width
     }
@@ -151,23 +137,11 @@ struct BreadcrumbMarkerView: View {
                     )
             }
 
-            VStack(alignment: .leading, spacing: 1) {
-                Text(shortText)
-                    .font(.system(size: markerSize.fontSize, weight: .medium))
-                    .foregroundStyle(.primary.opacity(0.86))
-                    .lineLimit(1)
-                    .truncationMode(.tail)
-
-                if state.isContextExpanded && markerStyle == .microTab {
-                    Text(displayContext)
-                        .font(.system(size: 8.5, weight: .regular))
-                        .foregroundStyle(.secondary.opacity(0.78))
-                        .lineLimit(1)
-                        .truncationMode(.middle)
-                        .transition(.opacity)
-                }
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
+            Text(shortText)
+                .font(.system(size: markerSize.fontSize, weight: .medium))
+                .foregroundStyle(.primary.opacity(0.86))
+                .lineLimit(1)
+                .truncationMode(.tail)
         }
     }
 
