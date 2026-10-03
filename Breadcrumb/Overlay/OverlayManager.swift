@@ -520,12 +520,8 @@ final class OverlayManager: NSObject {
             rootView: BreadcrumbMarkerView(
                 text: record.text,
                 accentColor: record.accentColor,
-                applicationName: record.applicationName,
-                contextTitle: record.contextGroupName,
                 state: markerState,
-                onHoverChange: { [weak self] hovering in
-                    self?.resizeMarkerPanel(for: record.id, expanded: markerState.isColorPickerExpanded, contextExpanded: hovering)
-                }
+                onHoverChange: { _ in }
             )
         )
 
@@ -562,8 +558,7 @@ final class OverlayManager: NSObject {
               panels[id] != nil else { return }
 
         state.isColorPickerExpanded.toggle()
-        state.isContextExpanded = false
-        resizeMarkerPanel(for: id, expanded: state.isColorPickerExpanded, contextExpanded: false)
+        resizeMarkerPanel(for: id, expanded: state.isColorPickerExpanded)
     }
 
     private func updateColorFromPicker(_ id: UUID, color: BreadcrumbColor) {
@@ -591,24 +586,12 @@ final class OverlayManager: NSObject {
 
     private func resizeMarkerPanel(
         for id: UUID,
-        expanded: Bool,
-        contextExpanded: Bool? = nil
+        expanded: Bool
     ) {
         guard let panel = panels[id] else { return }
 
         let markerSize = BreadcrumbPreferences.markerSize
-        let state = markerStates[id]
-        let showContext = contextExpanded ?? state?.isContextExpanded ?? false
-        let width: CGFloat
-
-        if expanded {
-            width = markerSize.expandedWidth
-        } else if showContext {
-            width = 124
-        } else {
-            width = markerSize.dimensions.width
-        }
-
+        let width = expanded ? markerSize.expandedWidth : markerSize.dimensions.width
         let size = CGSize(
             width: width,
             height: markerSize.dimensions.height
@@ -629,12 +612,8 @@ final class OverlayManager: NSObject {
 
     private func markerDimensions(for id: UUID) -> CGSize {
         let markerSize = BreadcrumbPreferences.markerSize
-        let state = markerStates[id]
-        if state?.isColorPickerExpanded == true {
+        if markerStates[id]?.isColorPickerExpanded == true {
             return CGSize(width: markerSize.expandedWidth, height: markerSize.dimensions.height)
-        }
-        if state?.isContextExpanded == true {
-            return CGSize(width: 124, height: markerSize.dimensions.height)
         }
         return markerSize.dimensions
     }
