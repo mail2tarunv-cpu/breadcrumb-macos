@@ -87,7 +87,7 @@ private final class MarkerHostingView<Content: View>: NSHostingView<Content> {
                 let paletteStart = BreadcrumbPreferences.markerSize.dimensions.width
                 if localPoint.x >= paletteStart {
                     let paletteX = localPoint.x - paletteStart - 7
-                    let step: CGFloat = 18
+                    let step: CGFloat = 13
                     let index = min(
                         max(Int((paletteX / step).rounded(.down)), 0),
                         BreadcrumbColor.allCases.count - 1
