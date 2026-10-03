@@ -48,11 +48,15 @@ struct BreadcrumbMarkerView: View {
 
             if state.isColorPickerExpanded && markerStyle == .microTab {
                 colorPalette
-                    .padding(.leading, 7)
-                    .transition(.opacity.combined(with: .scale(scale: 0.94, anchor: .leading)))
+                    .padding(.leading, 8)
+                    .transition(
+                        reducedMotion
+                            ? .opacity
+                            : .opacity.combined(with: .scale(scale: 0.96, anchor: .leading))
+                    )
             }
         }
-        .padding(.horizontal, 9)
+        .padding(.horizontal, 8)
         .frame(
             width: state.isColorPickerExpanded && markerStyle == .microTab
                 ? markerSize.expandedWidth
@@ -60,52 +64,28 @@ struct BreadcrumbMarkerView: View {
             height: markerSize.dimensions.height,
             alignment: .leading
         )
+        // The surface should read as atmosphere, not as a drawn button.
         .background {
-            Capsule()
-                .fill(.ultraThinMaterial)
-                .overlay {
-                    Capsule()
-                        .fill(
-                            LinearGradient(
-                                stops: [
-                                    .init(color: .white.opacity(state.isDragging ? 0.14 : 0.08), location: 0),
-                                    .init(color: .white.opacity(0.025), location: 0.5),
-                                    .init(color: .clear, location: 1)
-                                ],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                        )
-                }
+            Capsule(style: .continuous)
+                .fill(.ultraThinMaterial.opacity(state.isDragging ? 0.82 : 0.66))
         }
-        .clipShape(Capsule())
-        .overlay {
-            Capsule()
-                .strokeBorder(
-                    .white.opacity(state.isDragging ? 0.12 : (isHovering ? 0.09 : 0.055)),
-                    lineWidth: 0.5
-                )
-        }
+        .clipShape(Capsule(style: .continuous))
         .shadow(
             color: .black.opacity(
                 state.isDragging
-                    ? 0.18
+                    ? 0.15
                     : isHovering
-                        ? 0.105
-                        : 0.075
+                        ? 0.075
+                        : 0.05
             ),
-            radius: state.isDragging
-                ? 8
-                : isHovering
-                    ? 6
-                    : 5,
+            radius: state.isDragging ? 8 : 6,
             y: state.isDragging ? 4 : 2
         )
         .scaleEffect(
             reducedMotion
                 ? 1
                 : state.isDragging
-                    ? 1.015
+                    ? 1.012
                     : 1
         )
         .animation(
@@ -116,7 +96,7 @@ struct BreadcrumbMarkerView: View {
             reducedMotion ? nil : .easeOut(duration: 0.16),
             value: state.isColorPickerExpanded
         )
-        .contentShape(Capsule())
+        .contentShape(Capsule(style: .continuous))
         .onHover { hovering in
             isHovering = hovering
             onHoverChange(hovering)
@@ -130,27 +110,19 @@ struct BreadcrumbMarkerView: View {
         HStack(spacing: markerStyle == .microTab ? 6 : 0) {
             if markerStyle == .microTab {
                 Circle()
-                    .fill(
-                        RadialGradient(
-                            colors: [
-                                accentColor.opacity(0.94),
-                                accentColor.opacity(0.62)
-                            ],
-                            center: .center,
-                            startRadius: 0,
-                            endRadius: markerSize == .large ? 5 : 4
-                        )
-                    )
+                    .fill(accentColor.opacity(isHovering ? 0.96 : 0.9))
                     .frame(
                         width: markerSize == .large ? 9 : 8,
                         height: markerSize == .large ? 9 : 8
                     )
                     .overlay {
                         Circle()
-                            .stroke(.white.opacity(0.18), lineWidth: 0.45)
+                            .fill(.white.opacity(0.16))
+                            .frame(width: 2.2, height: 2.2)
+                            .offset(x: -1, y: -1)
                     }
                     .shadow(
-                        color: accentColor.opacity(0.16),
+                        color: accentColor.opacity(isHovering ? 0.20 : 0.12),
                         radius: 1.5,
                         y: 0.5
                     )
@@ -158,7 +130,7 @@ struct BreadcrumbMarkerView: View {
 
             Text(shortText)
                 .font(.system(size: markerSize.fontSize, weight: .medium))
-                .foregroundStyle(.primary.opacity(0.88))
+                .foregroundStyle(.primary.opacity(0.82))
                 .lineLimit(1)
                 .truncationMode(.tail)
         }
@@ -168,16 +140,18 @@ struct BreadcrumbMarkerView: View {
         HStack(spacing: 6) {
             ForEach(BreadcrumbColor.allCases) { color in
                 Circle()
-                    .fill(color.color.opacity(0.9))
-                    .frame(width: 12, height: 12)
+                    .fill(color.color.opacity(0.86))
+                    .frame(width: 11, height: 11)
                     .overlay {
                         Circle()
-                            .stroke(.white.opacity(0.16), lineWidth: 0.4)
+                            .fill(.white.opacity(0.14))
+                            .frame(width: 1.8, height: 1.8)
+                            .offset(x: -1, y: -1)
                     }
                     .shadow(
-                        color: color.color.opacity(0.12),
-                        radius: 1.25,
-                        y: 0.4
+                        color: color.color.opacity(0.10),
+                        radius: 1,
+                        y: 0.3
                     )
             }
         }
