@@ -43,7 +43,7 @@ enum BreadcrumbMarkerSize: String, CaseIterable, Identifiable {
     }
 
     var expandedWidth: CGFloat {
-        dimensions.width + 112
+        dimensions.width + 84
     }
 }
 
