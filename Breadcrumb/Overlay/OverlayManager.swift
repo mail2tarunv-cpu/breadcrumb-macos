@@ -520,8 +520,12 @@ final class OverlayManager: NSObject {
             rootView: BreadcrumbMarkerView(
                 text: record.text,
                 accentColor: record.accentColor,
+                applicationName: record.applicationName,
+                contextTitle: record.contextGroupName,
                 state: markerState,
-                onHoverChange: { _ in }
+                onHoverChange: { [weak self] hovering in
+                    self?.resizeMarkerPanel(for: record.id, expanded: markerState.isColorPickerExpanded, contextExpanded: hovering)
+                }
             )
         )
 
@@ -584,12 +588,28 @@ final class OverlayManager: NSObject {
         refresh(preferredContext: lastStableTargetContext)
     }
 
-    private func resizeMarkerPanel(for id: UUID, expanded: Bool) {
+    private func resizeMarkerPanel(
+        for id: UUID,
+        expanded: Bool,
+        contextExpanded: Bool? = nil
+    ) {
         guard let panel = panels[id] else { return }
 
         let markerSize = BreadcrumbPreferences.markerSize
+        let state = markerStates[id]
+        let showContext = contextExpanded ?? state?.isContextExpanded ?? false
+        let width: CGFloat
+
+        if expanded {
+            width = markerSize.expandedWidth
+        } else if showContext {
+            width = min(max(markerSize.dimensions.width, 150), 190)
+        } else {
+            width = markerSize.dimensions.width
+        }
+
         let size = CGSize(
-            width: expanded ? markerSize.expandedWidth : markerSize.dimensions.width,
+            width: width,
             height: markerSize.dimensions.height
         )
         let center = CGPoint(
@@ -608,11 +628,14 @@ final class OverlayManager: NSObject {
 
     private func markerDimensions(for id: UUID) -> CGSize {
         let markerSize = BreadcrumbPreferences.markerSize
-        let expanded = markerStates[id]?.isColorPickerExpanded == true
-        return CGSize(
-            width: expanded ? markerSize.expandedWidth : markerSize.dimensions.width,
-            height: markerSize.dimensions.height
-        )
+        let state = markerStates[id]
+        if state?.isColorPickerExpanded == true {
+            return CGSize(width: markerSize.expandedWidth, height: markerSize.dimensions.height)
+        }
+        if state?.isContextExpanded == true {
+            return CGSize(width: min(max(markerSize.dimensions.width, 150), 190), height: markerSize.dimensions.height)
+        }
+        return markerSize.dimensions
     }
 
     private func hideEditingPanel() {
