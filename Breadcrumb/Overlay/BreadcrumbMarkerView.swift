@@ -35,7 +35,7 @@ struct BreadcrumbMarkerView: View {
 
     private var displayContext: String {
         if let contextTitle, !contextTitle.isEmpty {
-            return contextTitle
+            return "(applicationName) · (contextTitle)"
         }
         return applicationName
     }
