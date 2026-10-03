@@ -548,6 +548,68 @@ final class OverlayManager: NSObject {
         panels[record.id] = panel
     }
 
+    private func toggleColorPicker(for id: UUID) {
+        guard let state = markerStates[id],
+              panels[id] != nil else { return }
+
+        state.isColorPickerExpanded.toggle()
+        resizeMarkerPanel(for: id, expanded: state.isColorPickerExpanded)
+    }
+
+    private func updateColorFromPicker(_ id: UUID, color: BreadcrumbColor) {
+        guard let index = records.firstIndex(where: { $0.id == id }) else { return }
+
+        records[index].breadcrumbColor = color
+        records[index].updatedAt = Date()
+        persist()
+
+        if let state = markerStates[id] {
+            state.isColorPickerExpanded = false
+        }
+
+        resizeMarkerPanel(for: id, expanded: false)
+        rebuildPanel(for: records[index])
+
+        DiagnosticLog.shared.record(
+            category: "Action",
+            summary: "Changed breadcrumb color",
+            detail: "id: \(id.uuidString)\\ncolor: \(color.rawValue)"
+        )
+
+        refresh(preferredContext: lastStableTargetContext)
+    }
+
+    private func resizeMarkerPanel(for id: UUID, expanded: Bool) {
+        guard let panel = panels[id] else { return }
+
+        let markerSize = BreadcrumbPreferences.markerSize
+        let size = CGSize(
+            width: expanded ? markerSize.expandedWidth : markerSize.dimensions.width,
+            height: markerSize.dimensions.height
+        )
+        let center = CGPoint(
+            x: panel.frame.midX,
+            y: panel.frame.midY
+        )
+        let frame = NSRect(
+            x: center.x - size.width / 2,
+            y: center.y - size.height / 2,
+            width: size.width,
+            height: size.height
+        )
+
+        panel.setFrame(frame, display: true, animate: !BreadcrumbPreferences.reducedMotion)
+    }
+
+    private func markerDimensions(for id: UUID) -> CGSize {
+        let markerSize = BreadcrumbPreferences.markerSize
+        let expanded = markerStates[id]?.isColorPickerExpanded == true
+        return CGSize(
+            width: expanded ? markerSize.expandedWidth : markerSize.dimensions.width,
+            height: markerSize.dimensions.height
+        )
+    }
+
     private func hideEditingPanel() {
         guard let editingRecordID else { return }
         panels[editingRecordID]?.orderOut(nil)
