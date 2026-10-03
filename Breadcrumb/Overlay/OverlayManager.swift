@@ -624,6 +624,13 @@ final class OverlayManager: NSObject {
                 return lastStableTargetContext
             }
 
+            // Accessibility can return a transient browser snapshot while a
+            // tab is moving/restoring (missing URL/title/frame identity).
+            // Never replace a known-good target with that transient state.
+            guard captured.hasStableIdentity else {
+                return lastStableTargetContext
+            }
+
             lastStableTargetContext = captured
             return captured
         }()
