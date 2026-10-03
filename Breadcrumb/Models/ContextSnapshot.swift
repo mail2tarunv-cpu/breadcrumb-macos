@@ -58,13 +58,6 @@ struct ContextSnapshot: Equatable {
             && record.processIdentifier != nil
             && processIdentifier == record.processIdentifier
 
-        if sameSession,
-           let savedWindow = record.windowNumber,
-           let currentWindow = windowNumber,
-           savedWindow != currentWindow {
-            return false
-        }
-
         let savedDocument = normalized(record.documentURL)
         let currentDocument = normalized(documentURL)
         let savedTitle = normalized(record.windowTitle)
@@ -72,15 +65,18 @@ struct ContextSnapshot: Equatable {
         let savedTabTitle = normalized(record.selectedTabTitle)
         let currentTabTitle = normalized(selectedTabTitle)
 
-        // Document identity is stronger than presentation metadata. Safari can
-        // restore a page with a new tab title while keeping the same URL.
+        // A browser tab can legitimately move to another window. Window
+        // numbers and tab indexes are presentation/session details, not stable
+        // identity, so they must not invalidate a document match.
+        //
+        // If both tab titles are available, use the title as an additional
+        // discriminator so the same URL can still distinguish two tabs.
         if let savedDocument,
            let currentDocument,
            savedDocument == currentDocument {
-            if sameSession,
-               let savedTabIndex = record.selectedTabIndex,
-               let currentTabIndex = selectedTabIndex,
-               savedTabIndex != currentTabIndex {
+            if let savedTabTitle,
+               let currentTabTitle,
+               savedTabTitle != currentTabTitle {
                 return false
             }
 
