@@ -30,15 +30,22 @@ struct ContextStackView: View {
                     .font(.system(size: 8, weight: .semibold))
                     .foregroundStyle(.tertiary)
             }
-            .padding(.horizontal, 10)
-            .frame(width: 154, height: 34)
-             .background(.thinMaterial)
-            .clipShape(Capsule())
-            .overlay {
-                Capsule()
-                    .stroke(.primary.opacity(isHovering ? 0.13 : 0.07), lineWidth: 0.5)
+            .padding(.horizontal, 11)
+            .frame(width: 164, height: 36)
+            .background {
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .fill(.thinMaterial)
+                    .overlay {
+                        RoundedRectangle(cornerRadius: 10, style: .continuous)
+                            .fill(.white.opacity(isHovering ? 0.045 : 0.025))
+                    }
+                    .overlay {
+                        RoundedRectangle(cornerRadius: 10, style: .continuous)
+                            .strokeBorder(.white.opacity(isHovering ? 0.15 : 0.08), lineWidth: 0.55)
+                    }
             }
-            .shadow(radius: isHovering ? 8 : 5, y: 3)
+            .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+            .shadow(color: .black.opacity(isHovering ? 0.12 : 0.07), radius: isHovering ? 10 : 7, y: 4)
             .scaleEffect(isHovering ? 1.015 : 1)
         }
         .buttonStyle(.plain)

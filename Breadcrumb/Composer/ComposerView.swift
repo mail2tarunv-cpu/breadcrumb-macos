@@ -14,13 +14,32 @@ struct ComposerView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            HStack(alignment: .top, spacing: 10) {
-                Image(systemName: "circle.dotted")
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundStyle(.secondary)
-                    .padding(.top, 3)
+            HStack(alignment: .top, spacing: 11) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 7, style: .continuous)
+                        .fill(.primary.opacity(0.055))
+                        .frame(width: 28, height: 28)
 
-                VStack(alignment: .leading, spacing: 5) {
+                    Image(systemName: "circle.dotted")
+                        .font(.system(size: 13.5, weight: .medium))
+                        .foregroundStyle(.secondary)
+                }
+
+                VStack(alignment: .leading, spacing: 6) {
+                    HStack(spacing: 6) {
+                        Text("New breadcrumb")
+                            .font(.system(size: 12.5, weight: .semibold))
+
+                        if contextAvailable {
+                            Text("Capture")
+                                .font(.system(size: 9.5, weight: .medium))
+                                .foregroundStyle(.secondary)
+                                .padding(.horizontal, 6)
+                                .padding(.vertical, 2.5)
+                                .background(.primary.opacity(0.055), in: RoundedRectangle(cornerRadius: 5, style: .continuous))
+                        }
+                    }
+
                     if contextAvailable {
                         GrowingComposerTextView(
                             text: $text,
@@ -32,10 +51,18 @@ struct ComposerView: View {
                         .frame(height: editorHeight)
 
                         if let contextLabel, !contextLabel.isEmpty {
-                            Text(contextLabel)
-                                .font(.system(size: 10.5))
-                                .foregroundStyle(.secondary)
-                                .lineLimit(1)
+                            HStack(spacing: 5) {
+                                Image(systemName: "scope")
+                                    .font(.system(size: 8.5, weight: .medium))
+
+                                Text(contextLabel)
+                                    .lineLimit(1)
+                            }
+                            .font(.system(size: 10))
+                            .foregroundStyle(.secondary)
+                            .padding(.horizontal, 7)
+                            .padding(.vertical, 4)
+                            .background(.primary.opacity(0.035), in: RoundedRectangle(cornerRadius: 6, style: .continuous))
                         }
                     } else {
                         Text("Window awareness unavailable")
@@ -47,39 +74,66 @@ struct ComposerView: View {
                     }
                 }
 
-                Spacer(minLength: 8)
+                Spacer(minLength: 4)
 
-                if contextAvailable {
-                    Text("↩")
-                        .font(.system(size: 10, weight: .semibold, design: .rounded))
-                        .foregroundStyle(.tertiary)
-                } else {
-                    Image(systemName: "exclamationmark.triangle")
-                        .font(.system(size: 12))
-                        .foregroundStyle(.secondary)
+                Button(action: onCancel) {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 9, weight: .semibold))
+                        .frame(width: 24, height: 24)
+                        .background(.primary.opacity(0.045), in: RoundedRectangle(cornerRadius: 7, style: .continuous))
                 }
+                .buttonStyle(.plain)
+                .help("Close")
             }
             .padding(.horizontal, 14)
-            .padding(.vertical, 12)
+            .padding(.top, 13)
+            .padding(.bottom, 10)
 
-            HStack {
-                Text("Enter to save")
-                Spacer()
-                Text("\((CaptureShortcut(rawValue: captureShortcutRaw) ?? .optionSpace).title)  ·  Shift↩ new line  ·  Esc close")
+            Divider()
+                .opacity(0.22)
+
+            HStack(spacing: 6) {
+                Text("Enter")
+                    .fontWeight(.medium)
+
+                Text("save")
+                    .foregroundStyle(.secondary)
+
+                Text("·")
+
+                Text("((CaptureShortcut(rawValue: captureShortcutRaw) ?? .optionSpace).title)")
+                Text("capture")
+
+                Text("·")
+
+                Text("Shift↩")
+                Text("new line")
+
+                Spacer(minLength: 8)
+
+                Text("Esc")
+                Text("close")
             }
             .font(.system(size: 9.5))
             .foregroundStyle(.tertiary)
             .padding(.horizontal, 14)
-            .padding(.bottom, 9)
+            .padding(.vertical, 9)
         }
-        .frame(width: 390)
-        .background(.regularMaterial)
-        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-        .overlay {
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .stroke(.primary.opacity(0.08), lineWidth: 0.5)
+        .frame(width: 382)
+        .background {
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .fill(.regularMaterial)
+                .overlay {
+                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                        .fill(.white.opacity(0.035))
+                }
+                .overlay {
+                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                        .strokeBorder(.white.opacity(0.11), lineWidth: 0.55)
+                }
         }
-        .shadow(radius: 18, y: 8)
+        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .shadow(color: .black.opacity(0.14), radius: 18, y: 8)
         .onChange(of: editorHeight) { _, newHeight in
             onHeightChange(newHeight)
         }

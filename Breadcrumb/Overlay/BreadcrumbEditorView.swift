@@ -238,24 +238,24 @@ struct BreadcrumbEditorView: View {
                 .padding(.bottom, 7)
             }
         }
-        .frame(width: 292)
+        .frame(width: 320)
         // Same visual material as the collapsed breadcrumb; the editor is
         // the breadcrumb opened up, not a separate modal surface.
         .background {
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .fill(.ultraThinMaterial.opacity(0.72))
+            RoundedRectangle(cornerRadius: 15, style: .continuous)
+                .fill(.thinMaterial)
+                .overlay {
+                    RoundedRectangle(cornerRadius: 15, style: .continuous)
+                        .fill(.white.opacity(0.035))
+                }
+                .overlay {
+                    RoundedRectangle(cornerRadius: 15, style: .continuous)
+                        .strokeBorder(.white.opacity(0.11), lineWidth: 0.55)
+                }
         }
-        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-        .shadow(
-            color: .black.opacity(0.13),
-            radius: 16,
-            y: 7
-        )
-        .shadow(
-            color: .black.opacity(0.04),
-            radius: 3,
-            y: 1
-        )
+        .clipShape(RoundedRectangle(cornerRadius: 15, style: .continuous))
+        .shadow(color: .black.opacity(0.15), radius: 18, y: 8)
+        .shadow(color: .black.opacity(0.045), radius: 3, y: 1)
         .onAppear {
             DispatchQueue.main.async { isFocused = true }
         }

@@ -4,40 +4,62 @@ struct BreadcrumbHoverPreviewView: View {
     let record: BreadcrumbRecord
 
     var body: some View {
-        HStack(alignment: .top, spacing: 9) {
-            Circle()
-                .fill(record.breadcrumbColor.color)
-                .frame(width: 9, height: 9)
-                .padding(.top, 4)
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 8) {
+                Circle()
+                    .fill(record.breadcrumbColor.color.opacity(0.92))
+                    .frame(width: 8, height: 8)
+                    .overlay {
+                        Circle()
+                            .fill(.white.opacity(0.18))
+                            .frame(width: 2, height: 2)
+                            .offset(x: -1, y: -1)
+                    }
 
-            VStack(alignment: .leading, spacing: 4) {
-                Text(record.text)
-                    .font(.system(size: 12.5, weight: .medium))
-                    .foregroundStyle(.primary)
-                    .fixedSize(horizontal: false, vertical: true)
-
-                HStack(spacing: 4) {
+                HStack(spacing: 5) {
                     Text(record.applicationName)
+                        .font(.system(size: 10.5, weight: .semibold))
 
                     if !record.contextGroupName.isEmpty {
                         Text("·")
+                            .foregroundStyle(.tertiary)
+
                         Text(record.contextGroupName)
+                            .font(.system(size: 10.5))
+                            .foregroundStyle(.secondary)
                             .lineLimit(1)
                     }
                 }
-                .font(.system(size: 9.5, weight: .medium))
-                .foregroundStyle(.secondary)
+
+                Spacer(minLength: 8)
+
+                Image(systemName: "arrow.up.left.and.arrow.down.right")
+                    .font(.system(size: 8, weight: .medium))
+                    .foregroundStyle(.tertiary)
             }
+
+            Text(record.text)
+                .font(.system(size: 12.5, weight: .medium))
+                .foregroundStyle(.primary.opacity(0.94))
+                .fixedSize(horizontal: false, vertical: true)
+                .lineLimit(6)
         }
-        .padding(.horizontal, 11)
-        .padding(.vertical, 9)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 11)
         .frame(width: 280, alignment: .leading)
-         .background(.thinMaterial)
-        .clipShape(RoundedRectangle(cornerRadius: 11, style: .continuous))
-        .overlay {
+        .background {
             RoundedRectangle(cornerRadius: 11, style: .continuous)
-                .stroke(.primary.opacity(0.08), lineWidth: 0.5)
+                .fill(.thinMaterial)
+                .overlay {
+                    RoundedRectangle(cornerRadius: 11, style: .continuous)
+                        .fill(.white.opacity(0.035))
+                }
+                .overlay {
+                    RoundedRectangle(cornerRadius: 11, style: .continuous)
+                        .strokeBorder(.white.opacity(0.11), lineWidth: 0.55)
+                }
         }
-        .shadow(color: .black.opacity(0.14), radius: 12, y: 5)
+        .clipShape(RoundedRectangle(cornerRadius: 11, style: .continuous))
+        .shadow(color: .black.opacity(0.13), radius: 14, y: 6)
     }
 }
