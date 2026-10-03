@@ -138,21 +138,21 @@ struct BreadcrumbEditorView: View {
                 .buttonStyle(.borderless)
                 .help("Close")
             }
-            .padding(.horizontal, 13)
-            .padding(.top, 10)
-            .padding(.bottom, 4)
+            .padding(.horizontal, 12)
+            .padding(.top, 8)
+            .padding(.bottom, 2)
 
             TextEditor(text: $text)
                 .font(.system(size: 14.5))
                 .scrollContentBackground(.hidden)
                 .scrollIndicators(.never)
                 .focused($isFocused)
-                .padding(.horizontal, 9)
-                .padding(.vertical, 6)
-                .frame(minHeight: 76, maxHeight: 108)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 5)
+                .frame(height: 58)
                 .background(Color.clear)
-                .padding(.horizontal, 10)
-                .padding(.vertical, 3)
+                .padding(.horizontal, 9)
+                .padding(.vertical, 2)
 
             if isConfirmingDelete {
                 HStack(spacing: 8) {
@@ -181,7 +181,7 @@ struct BreadcrumbEditorView: View {
                         .controlSize(.small)
                 }
                 .padding(.horizontal, 12)
-                .padding(.vertical, 8)
+                .padding(.vertical, 7)
                 .background(.primary.opacity(0.035))
                 .transition(.opacity.combined(with: .move(edge: .bottom)))
             } else {
@@ -208,9 +208,9 @@ struct BreadcrumbEditorView: View {
                     .buttonStyle(.borderedProminent)
                     .controlSize(.small)
                 }
-                .padding(.horizontal, 13)
-                .padding(.top, 2)
-                .padding(.bottom, 9)
+                .padding(.horizontal, 12)
+                .padding(.top, 1)
+                .padding(.bottom, 7)
             }
         }
         .frame(width: 316)
