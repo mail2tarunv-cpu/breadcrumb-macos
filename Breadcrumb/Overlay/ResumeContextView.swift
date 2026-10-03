@@ -32,7 +32,7 @@ struct ResumeContextView: View {
 
             footer
         }
-        .frame(width: 382)
+         .frame(width: 390)
         .background {
             RoundedRectangle(cornerRadius: 18, style: .continuous)
                 .fill(.ultraThinMaterial)
@@ -66,8 +66,8 @@ struct ResumeContextView: View {
                 }
         }
         .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
-        .shadow(color: .black.opacity(0.20), radius: 22, y: 10)
-        .shadow(color: .black.opacity(0.08), radius: 4, y: 2)
+        .shadow(color: .black.opacity(0.16), radius: 22, y: 10)
+        .shadow(color: .black.opacity(0.05), radius: 4, y: 2)
         .onExitCommand(perform: onClose)
     }
 
@@ -195,7 +195,7 @@ struct ResumeContextView: View {
                     .fill(.primary.opacity(0.22))
                     .frame(width: 4, height: 4)
 
-                Text("(records.count) active")
+                Text("\(records.count) active")
             }
 
             Spacer()
