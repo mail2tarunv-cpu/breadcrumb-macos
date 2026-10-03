@@ -562,7 +562,8 @@ final class OverlayManager: NSObject {
               panels[id] != nil else { return }
 
         state.isColorPickerExpanded.toggle()
-        resizeMarkerPanel(for: id, expanded: state.isColorPickerExpanded)
+        state.isContextExpanded = false
+        resizeMarkerPanel(for: id, expanded: state.isColorPickerExpanded, contextExpanded: false)
     }
 
     private func updateColorFromPicker(_ id: UUID, color: BreadcrumbColor) {
