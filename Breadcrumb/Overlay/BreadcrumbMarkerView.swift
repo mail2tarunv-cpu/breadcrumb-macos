@@ -47,12 +47,8 @@ struct BreadcrumbMarkerView: View {
             markerIdentity
 
             if state.isColorPickerExpanded && markerStyle == .microTab {
-                Divider()
-                    .frame(height: 14)
-                    .opacity(0.28)
-                    .padding(.horizontal, 8)
-
                 colorPalette
+                    .padding(.leading, 7)
                     .transition(.opacity.combined(with: .scale(scale: 0.94, anchor: .leading)))
             }
         }
@@ -72,8 +68,8 @@ struct BreadcrumbMarkerView: View {
                         .fill(
                             LinearGradient(
                                 stops: [
-                                    .init(color: .white.opacity(state.isDragging ? 0.22 : 0.14), location: 0),
-                                    .init(color: .white.opacity(0.045), location: 0.5),
+                                    .init(color: .white.opacity(state.isDragging ? 0.14 : 0.08), location: 0),
+                                    .init(color: .white.opacity(0.025), location: 0.5),
                                     .init(color: .clear, location: 1)
                                 ],
                                 startPoint: .topLeading,
@@ -86,24 +82,24 @@ struct BreadcrumbMarkerView: View {
         .overlay {
             Capsule()
                 .strokeBorder(
-                    .white.opacity(isHovering || state.isDragging ? 0.24 : 0.15),
-                    lineWidth: 0.55
+                    .white.opacity(state.isDragging ? 0.12 : (isHovering ? 0.09 : 0.055)),
+                    lineWidth: 0.5
                 )
         }
         .shadow(
             color: .black.opacity(
                 state.isDragging
-                    ? min(shadowStrength.opacity + 0.10, 0.28)
+                    ? 0.18
                     : isHovering
-                        ? min(shadowStrength.opacity + 0.025, 0.17)
-                        : min(shadowStrength.opacity, 0.13)
+                        ? 0.105
+                        : 0.075
             ),
             radius: state.isDragging
-                ? shadowStrength.radius + 5
+                ? 8
                 : isHovering
-                    ? shadowStrength.radius + 1
-                    : shadowStrength.radius,
-            y: state.isDragging ? 5 : 2
+                    ? 6
+                    : 5,
+            y: state.isDragging ? 4 : 2
         )
         .scaleEffect(
             reducedMotion
@@ -137,8 +133,8 @@ struct BreadcrumbMarkerView: View {
                     .fill(
                         RadialGradient(
                             colors: [
-                                accentColor.opacity(0.98),
-                                accentColor.opacity(0.68)
+                                accentColor.opacity(0.94),
+                                accentColor.opacity(0.62)
                             ],
                             center: .center,
                             startRadius: 0,
@@ -151,11 +147,11 @@ struct BreadcrumbMarkerView: View {
                     )
                     .overlay {
                         Circle()
-                            .stroke(.white.opacity(0.28), lineWidth: 0.5)
+                            .stroke(.white.opacity(0.18), lineWidth: 0.45)
                     }
                     .shadow(
-                        color: accentColor.opacity(0.22),
-                        radius: 2,
+                        color: accentColor.opacity(0.16),
+                        radius: 1.5,
                         y: 0.5
                     )
             }
@@ -169,16 +165,20 @@ struct BreadcrumbMarkerView: View {
     }
 
     private var colorPalette: some View {
-        HStack(spacing: 5) {
+        HStack(spacing: 6) {
             ForEach(BreadcrumbColor.allCases) { color in
                 Circle()
-                    .fill(color.color)
-                    .frame(width: 13, height: 13)
+                    .fill(color.color.opacity(0.9))
+                    .frame(width: 12, height: 12)
                     .overlay {
                         Circle()
-                            .stroke(.white.opacity(0.24), lineWidth: 0.45)
+                            .stroke(.white.opacity(0.16), lineWidth: 0.4)
                     }
-                    .shadow(color: color.color.opacity(0.16), radius: 1.5, y: 0.5)
+                    .shadow(
+                        color: color.color.opacity(0.12),
+                        radius: 1.25,
+                        y: 0.4
+                    )
             }
         }
     }
