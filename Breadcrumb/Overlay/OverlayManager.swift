@@ -102,6 +102,10 @@ final class OverlayManager: NSObject {
     private var draggingRecordID: UUID?
     private var lastManuallyPositionedRecordID: UUID?
     private var lastStableTargetContext: ContextSnapshot?
+    private var pendingTargetContext: ContextSnapshot?
+    private var pendingTargetContextKey: String?
+    private var pendingTargetContextSince: Date?
+    private let targetContextStabilityInterval: TimeInterval = 0.24
 
     private var autoResumeCandidateKey: String?
     private var autoResumeCandidateSince: Date?
@@ -631,6 +635,47 @@ final class OverlayManager: NSObject {
                 return lastStableTargetContext
             }
 
+            // Browser accessibility snapshots can alternate between the old
+            // and new tab/window while a tab is being dragged or restored.
+            // Do not let either transient snapshot immediately drive panel
+            // visibility. A candidate must remain stable for a short interval
+            // before it becomes the active target context.
+            let candidateKey = targetContextKey(for: captured)
+            let now = Date()
+
+            if lastStableTargetContext == nil {
+                pendingTargetContext = nil
+                pendingTargetContextKey = nil
+                pendingTargetContextSince = nil
+                lastStableTargetContext = captured
+                return captured
+            }
+
+            if candidateKey == targetContextKey(for: lastStableTargetContext!) {
+                pendingTargetContext = nil
+                pendingTargetContextKey = nil
+                pendingTargetContextSince = nil
+                lastStableTargetContext = captured
+                return captured
+            }
+
+            if pendingTargetContextKey != candidateKey {
+                pendingTargetContext = captured
+                pendingTargetContextKey = candidateKey
+                pendingTargetContextSince = now
+                return lastStableTargetContext
+            }
+
+            pendingTargetContext = captured
+
+            guard let pendingSince = pendingTargetContextSince,
+                  now.timeIntervalSince(pendingSince) >= targetContextStabilityInterval else {
+                return lastStableTargetContext
+            }
+
+            pendingTargetContext = nil
+            pendingTargetContextKey = nil
+            pendingTargetContextSince = nil
             lastStableTargetContext = captured
             return captured
         }()
@@ -765,7 +810,7 @@ final class OverlayManager: NSObject {
             }
     }
 
-    private func contextKey(for context: ContextSnapshot) -> String {
+    private func targetContextKey(for context: ContextSnapshot) -> String {
         let document = context.documentURL?
             .trimmingCharacters(in: .whitespacesAndNewlines)
         let title = context.windowTitle?
@@ -778,6 +823,10 @@ final class OverlayManager: NSObject {
             document?.isEmpty == false ? document! : (title ?? ""),
             tab ?? ""
         ].joined(separator: "|")
+    }
+
+    private func contextKey(for context: ContextSnapshot) -> String {
+        targetContextKey(for: context)
     }
 
     private func updateContextVisit(for context: ContextSnapshot) {
