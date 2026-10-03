@@ -31,13 +31,15 @@ struct BreadcrumbMarkerView: View {
     }
 
     private var shortText: String {
-        let words = text
+        let allWords = text
             .split(whereSeparator: { $0.isWhitespace || $0.isNewline })
-            .prefix(markerStyle == .microTab ? 2 : 3)
             .map(String.init)
-            .joined(separator: " ")
 
-        return words.isEmpty ? "Note" : words
+        let limit = markerStyle == .microTab ? 2 : 3
+        let visible = allWords.prefix(limit).joined(separator: " ")
+
+        guard !visible.isEmpty else { return "Note" }
+        return allWords.count > limit ? visible + "…" : visible
     }
 
     var body: some View {
