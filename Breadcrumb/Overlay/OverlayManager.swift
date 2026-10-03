@@ -3,6 +3,9 @@ import SwiftUI
 
 private final class MarkerHostingView<Content: View>: NSHostingView<Content> {
     var onClick: (() -> Void)?
+    var onColorToggle: (() -> Void)?
+    var onColorSelected: ((BreadcrumbColor) -> Void)?
+    var markerState: BreadcrumbMarkerState?
     var onDragBegan: (() -> Void)?
     var onDragEnded: ((CGPoint) -> Void)?
 
@@ -44,6 +47,7 @@ private final class MarkerHostingView<Content: View>: NSHostingView<Content> {
         if !isDragging {
             guard distance >= 3 else { return }
             isDragging = true
+            markerState?.isDragging = true
             NSCursor.closedHand.push()
             onDragBegan?()
         }
@@ -65,6 +69,7 @@ private final class MarkerHostingView<Content: View>: NSHostingView<Content> {
 
         if isDragging {
             NSCursor.pop()
+            markerState?.isDragging = false
             onDragEnded?(
                 CGPoint(
                     x: window.frame.midX,
@@ -72,7 +77,31 @@ private final class MarkerHostingView<Content: View>: NSHostingView<Content> {
                 )
             )
         } else {
-            onClick?()
+            let localPoint = convert(
+                event.locationInWindow,
+                from: nil
+            )
+
+            if let markerState, markerState.isColorPickerExpanded {
+                let paletteStart = bounds.width - 112
+                if localPoint.x >= paletteStart {
+                    let paletteX = localPoint.x - paletteStart
+                    let step: CGFloat = 18
+                    let index = min(
+                        max(Int((paletteX / step).rounded(.down)), 0),
+                        BreadcrumbColor.allCases.count - 1
+                    )
+                    onColorSelected?(BreadcrumbColor.allCases[index])
+                } else if localPoint.x <= 30 {
+                    onColorToggle?()
+                } else {
+                    onClick?()
+                }
+            } else if localPoint.x <= 30 {
+                onColorToggle?()
+            } else {
+                onClick?()
+            }
         }
 
         resetGesture()
@@ -101,6 +130,7 @@ final class OverlayManager: NSObject {
     private var editingRecordID: UUID?
     private var draggingRecordID: UUID?
     private var lastManuallyPositionedRecordID: UUID?
+    private var markerStates: [UUID: BreadcrumbMarkerState] = [:]
     private var lastStableTargetContext: ContextSnapshot?
     private var pendingTargetContext: ContextSnapshot?
     private var pendingTargetContextKey: String?
@@ -457,6 +487,8 @@ final class OverlayManager: NSObject {
 
         let size = BreadcrumbPreferences.markerSize.dimensions
         let fallbackPoint = record.anchorPoint(in: nil)
+        let markerState = markerStates[record.id] ?? BreadcrumbMarkerState()
+        markerStates[record.id] = markerState
 
         let panel = NSPanel(
             contentRect: NSRect(
@@ -483,9 +515,20 @@ final class OverlayManager: NSObject {
             rootView: BreadcrumbMarkerView(
                 text: record.text,
                 accentColor: record.accentColor,
+                state: markerState,
                 onHoverChange: { _ in }
             )
         )
+
+        host.markerState = markerState
+
+        host.onColorToggle = { [weak self] in
+            self?.toggleColorPicker(for: record.id)
+        }
+
+        host.onColorSelected = { [weak self] color in
+            self?.updateColorFromPicker(record.id, color: color)
+        }
 
         host.onClick = { [weak self] in
             self?.openEditor(for: record.id)
