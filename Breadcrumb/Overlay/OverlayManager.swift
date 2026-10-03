@@ -1198,32 +1198,32 @@ final class OverlayManager: NSObject {
             )
         }
 
-        let markerSize = BreadcrumbPreferences.markerSize.dimensions
-        let verticalStep: CGFloat = markerSize.height + 6
+        let baseSize = BreadcrumbPreferences.markerSize.dimensions
+        let verticalStep: CGFloat = baseSize.height + 6
         let horizontalPadding: CGFloat = 8
         let verticalPadding: CGFloat = 8
 
         var result: [UUID: CGPoint] = [:]
         var occupied: [CGRect] = []
 
-        func rect(for center: CGPoint) -> CGRect {
+        func rect(for center: CGPoint, size: CGSize) -> CGRect {
             CGRect(
-                x: center.x - markerSize.width / 2,
-                y: center.y - markerSize.height / 2,
-                width: markerSize.width,
-                height: markerSize.height
+                x: center.x - size.width / 2,
+                y: center.y - size.height / 2,
+                width: size.width,
+                height: size.height
             )
         }
 
-        func clamped(_ point: CGPoint) -> CGPoint {
+        func clamped(_ point: CGPoint, size: CGSize) -> CGPoint {
             CGPoint(
                 x: min(
-                    max(point.x, frame.minX + markerSize.width / 2 + horizontalPadding),
-                    frame.maxX - markerSize.width / 2 - horizontalPadding
+                    max(point.x, frame.minX + size.width / 2 + horizontalPadding),
+                    frame.maxX - size.width / 2 - horizontalPadding
                 ),
                 y: min(
-                    max(point.y, frame.minY + markerSize.height / 2 + verticalPadding),
-                    frame.maxY - markerSize.height / 2 - verticalPadding
+                    max(point.y, frame.minY + size.height / 2 + verticalPadding),
+                    frame.maxY - size.height / 2 - verticalPadding
                 )
             )
         }
@@ -1235,25 +1235,38 @@ final class OverlayManager: NSObject {
         }
 
         for record in orderedRecords {
-            let desired = clamped(record.anchorPoint(in: frame))
+            let size = markerDimensions(for: record.id)
+            let desired = clamped(record.anchorPoint(in: frame), size: size)
             var candidates: [CGPoint] = [desired]
 
             for step in 1...6 {
                 candidates.append(
-                    clamped(CGPoint(x: desired.x, y: desired.y - CGFloat(step) * verticalStep))
+                    clamped(
+                        CGPoint(
+                            x: desired.x,
+                            y: desired.y - CGFloat(step) * verticalStep
+                        ),
+                        size: size
+                    )
                 )
                 candidates.append(
-                    clamped(CGPoint(x: desired.x, y: desired.y + CGFloat(step) * verticalStep))
+                    clamped(
+                        CGPoint(
+                            x: desired.x,
+                            y: desired.y + CGFloat(step) * verticalStep
+                        ),
+                        size: size
+                    )
                 )
             }
 
             let chosen = candidates.first { candidate in
-                let candidateRect = rect(for: candidate).insetBy(dx: -4, dy: -3)
+                let candidateRect = rect(for: candidate, size: size).insetBy(dx: -4, dy: -3)
                 return !occupied.contains { $0.intersects(candidateRect) }
             } ?? desired
 
             result[record.id] = chosen
-            occupied.append(rect(for: chosen))
+            occupied.append(rect(for: chosen, size: size))
         }
 
         return result
