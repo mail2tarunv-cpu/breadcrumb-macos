@@ -58,7 +58,7 @@ struct BreadcrumbMarkerView: View {
 
             if state.isColorPickerExpanded && markerStyle == .microTab {
                 colorPalette
-                    .padding(.leading, 8)
+                    .padding(.leading, 6)
                     .transition(
                         reducedMotion
                             ? .opacity
@@ -75,7 +75,7 @@ struct BreadcrumbMarkerView: View {
         // The surface should read as atmosphere, not as a drawn button.
         .background {
             Capsule(style: .continuous)
-                .fill(.ultraThinMaterial.opacity(state.isDragging ? 0.82 : 0.66))
+                .fill(.ultraThinMaterial.opacity(state.isDragging ? 0.62 : 0.44))
         }
         .clipShape(Capsule(style: .continuous))
         .shadow(
@@ -83,10 +83,10 @@ struct BreadcrumbMarkerView: View {
                 state.isDragging
                     ? 0.15
                     : isHovering
-                        ? 0.075
-                        : 0.05
+                        ? 0.06
+                        : 0.035
             ),
-            radius: state.isDragging ? 8 : 6,
+            radius: state.isDragging ? 7 : 5,
             y: state.isDragging ? 4 : 2
         )
         .scaleEffect(
@@ -172,11 +172,11 @@ struct BreadcrumbMarkerView: View {
     }
 
     private var colorPalette: some View {
-        HStack(spacing: 6) {
+        HStack(spacing: 4) {
             ForEach(BreadcrumbColor.allCases) { color in
                 Circle()
                     .fill(color.color.opacity(0.86))
-                    .frame(width: 11, height: 11)
+                    .frame(width: 9, height: 9)
                     .overlay {
                         Circle()
                             .fill(.white.opacity(0.14))
