@@ -5,6 +5,7 @@ struct BreadcrumbEditorView: View {
     @FocusState private var isFocused: Bool
     @State private var isConfirmingDelete = false
     @State private var selectedColor: BreadcrumbColor
+    @State private var isColorPickerExpanded = false
     @AppStorage(BreadcrumbPreferences.reducedMotionKey) private var reducedMotion = false
     @AppStorage(BreadcrumbPreferences.shadowStrengthKey) private var shadowStrengthRaw = BreadcrumbShadowStrength.standard.rawValue
 
@@ -50,36 +51,60 @@ struct BreadcrumbEditorView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack(spacing: 8) {
-                HStack(spacing: 5) {
-                    ForEach(BreadcrumbColor.allCases) { color in
-                        Button {
-                            selectedColor = color
-                            onColorChange(color)
-                        } label: {
-                            ZStack {
+                Button {
+                    withAnimation(reducedMotion ? nil : .easeOut(duration: 0.14)) {
+                        isColorPickerExpanded.toggle()
+                    }
+                } label: {
+                    Circle()
+                        .fill(selectedColor.color.opacity(0.92))
+                        .frame(width: 15, height: 15)
+                        .overlay {
+                            Circle()
+                                .fill(.white.opacity(0.16))
+                                .frame(width: 2, height: 2)
+                                .offset(x: -1, y: -1)
+                        }
+                        .shadow(
+                            color: selectedColor.color.opacity(0.14),
+                            radius: 1.5,
+                            y: 0.5
+                        )
+                        .frame(width: 22, height: 22)
+                }
+                .buttonStyle(.plain)
+                .help("Change color")
+
+                if isColorPickerExpanded {
+                    HStack(spacing: 5) {
+                        ForEach(BreadcrumbColor.allCases) { color in
+                            Button {
+                                selectedColor = color
+                                onColorChange(color)
+                                withAnimation(reducedMotion ? nil : .easeOut(duration: 0.12)) {
+                                    isColorPickerExpanded = false
+                                }
+                            } label: {
                                 Circle()
-                                    .fill(color.color.opacity(selectedColor == color ? 0.94 : 0.78))
-                                    .frame(width: 14, height: 14)
+                                    .fill(color.color.opacity(selectedColor == color ? 0.94 : 0.76))
+                                    .frame(width: 12, height: 12)
                                     .overlay {
                                         if selectedColor == color {
                                             Circle()
-                                                .stroke(.white.opacity(0.42), lineWidth: 0.8)
-                                                .frame(width: 18, height: 18)
+                                                .stroke(.white.opacity(0.40), lineWidth: 0.8)
+                                                .frame(width: 17, height: 17)
                                         }
                                     }
-                                    .shadow(
-                                        color: selectedColor == color
-                                            ? color.color.opacity(0.16)
-                                            : .clear,
-                                        radius: 1.5
-                                    )
                             }
-                            .frame(width: 23, height: 23)
-                            .contentShape(Circle())
+                            .buttonStyle(.plain)
+                            .help(color.name)
                         }
-                        .buttonStyle(.plain)
-                        .help(color.name)
                     }
+                    .transition(
+                        reducedMotion
+                            ? .opacity
+                            : .opacity.combined(with: .scale(scale: 0.96, anchor: .leading))
+                    )
                 }
 
                 VStack(alignment: .leading, spacing: 0) {
@@ -213,7 +238,7 @@ struct BreadcrumbEditorView: View {
                 .padding(.bottom, 7)
             }
         }
-        .frame(width: 316)
+        .frame(width: 292)
         // Same visual material as the collapsed breadcrumb; the editor is
         // the breadcrumb opened up, not a separate modal surface.
         .background {
