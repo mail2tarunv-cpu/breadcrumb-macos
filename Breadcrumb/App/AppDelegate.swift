@@ -171,12 +171,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         let center = NSPoint(x: 18, y: 18)
         let ring = NSBezierPath()
-        ring.lineWidth = 5.0
+        ring.lineWidth = 4.5
         ring.lineCapStyle = .round
         ring.appendArc(
             withCenter: center,
-            radius: 12.5,
-            startAngle: 45,
+            radius: 12,
+            startAngle: 40,
             endAngle: 320,
             clockwise: false
         )
@@ -184,11 +184,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         NSColor.labelColor.setStroke()
         ring.stroke()
 
+        // The dot sits exactly on the centerline of the ring's opening,
+        // making the mark optically balanced at menu-bar scale.
         NSColor.systemOrange.setFill()
-        // The dot follows the ring's 45° endpoint. Keeping its center on
-        // that endpoint makes the mark read as one intentional symbol.
         NSBezierPath(
-            ovalIn: NSRect(x: 24, y: 24, width: 8, height: 8)
+            ovalIn: NSRect(x: 26, y: 14, width: 7, height: 7)
         ).fill()
 
         image.unlockFocus()
