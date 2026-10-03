@@ -326,6 +326,7 @@ final class OverlayManager: NSObject {
 
         panels[id]?.orderOut(nil)
         panels.removeValue(forKey: id)
+        markerStates.removeValue(forKey: id)
         records.remove(at: index)
         persist()
         if editingRecordID == id {
@@ -438,6 +439,9 @@ final class OverlayManager: NSObject {
         records[index].breadcrumbColor = color
         records[index].updatedAt = Date()
         persist()
+
+        markerStates[id]?.isColorPickerExpanded = false
+        resizeMarkerPanel(for: id, expanded: false)
         rebuildPanel(for: records[index])
 
         DiagnosticLog.shared.record(
