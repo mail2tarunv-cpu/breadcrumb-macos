@@ -604,7 +604,7 @@ final class OverlayManager: NSObject {
         if expanded {
             width = markerSize.expandedWidth
         } else if showContext {
-            width = min(max(markerSize.dimensions.width, 150), 190)
+            width = 124
         } else {
             width = markerSize.dimensions.width
         }
@@ -634,7 +634,7 @@ final class OverlayManager: NSObject {
             return CGSize(width: markerSize.expandedWidth, height: markerSize.dimensions.height)
         }
         if state?.isContextExpanded == true {
-            return CGSize(width: min(max(markerSize.dimensions.width, 150), 190), height: markerSize.dimensions.height)
+            return CGSize(width: 124, height: markerSize.dimensions.height)
         }
         return markerSize.dimensions
     }
