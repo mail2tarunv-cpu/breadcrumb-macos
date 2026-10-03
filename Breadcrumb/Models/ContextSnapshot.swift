@@ -66,20 +66,13 @@ struct ContextSnapshot: Equatable {
         let currentTabTitle = normalized(selectedTabTitle)
 
         // A browser tab can legitimately move to another window. Window
-        // numbers and tab indexes are presentation/session details, not stable
-        // identity, so they must not invalidate a document match.
-        //
-        // If both tab titles are available, use the title as an additional
-        // discriminator so the same URL can still distinguish two tabs.
+        // numbers, tab indexes, and even tab titles can change while the
+        // browser is restoring or moving a tab. The document URL is the
+        // stable identity, so presentation/session metadata must not make a
+        // valid breadcrumb disappear.
         if let savedDocument,
            let currentDocument,
            savedDocument == currentDocument {
-            if let savedTabTitle,
-               let currentTabTitle,
-               savedTabTitle != currentTabTitle {
-                return false
-            }
-
             return true
         }
 
