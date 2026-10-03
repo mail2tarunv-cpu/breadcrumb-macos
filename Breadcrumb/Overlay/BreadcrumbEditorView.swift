@@ -59,12 +59,13 @@ struct BreadcrumbEditorView: View {
                             ZStack {
                                 Circle()
                                     .fill(color.color)
-                                    .frame(width: 17, height: 17)
+                                    .frame(width: 15, height: 15)
 
                                 if selectedColor == color {
                                     Circle()
-                                        .stroke(.primary.opacity(0.75), lineWidth: 1.5)
-                                        .frame(width: 21, height: 21)
+                                        .stroke(.white.opacity(0.58), lineWidth: 1.0)
+                                        .frame(width: 20, height: 20)
+                                        .shadow(color: color.color.opacity(0.18), radius: 1.5)
                                 }
                             }
                             .frame(width: 23, height: 23)
@@ -81,7 +82,7 @@ struct BreadcrumbEditorView: View {
 
                     if let windowTitle, !windowTitle.isEmpty {
                         Text(windowTitle)
-                            .font(.system(size: 9.5))
+                            .font(.system(size: 9.25))
                             .foregroundStyle(.tertiary)
                             .lineLimit(1)
                     }
@@ -207,18 +208,34 @@ struct BreadcrumbEditorView: View {
             }
         }
         .frame(width: 316)
-         .background(.thinMaterial)
-        .clipShape(RoundedRectangle(cornerRadius: 13, style: .continuous))
-        .overlay {
-            RoundedRectangle(cornerRadius: 13, style: .continuous)
-                .stroke(.primary.opacity(0.04), lineWidth: 0.5)
+        .background {
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .fill(.ultraThinMaterial)
+                .overlay {
+                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        .fill(
+                            LinearGradient(
+                                stops: [
+                                    .init(color: .white.opacity(0.08), location: 0),
+                                    .init(color: .white.opacity(0.018), location: 0.48),
+                                    .init(color: .clear, location: 1)
+                                ],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                }
         }
+        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
         .shadow(
-            color: .black.opacity(
-                (BreadcrumbShadowStrength(rawValue: shadowStrengthRaw) ?? .standard).opacity + 0.02
-            ),
-            radius: (BreadcrumbShadowStrength(rawValue: shadowStrengthRaw) ?? .standard).radius + 9,
-            y: 6
+            color: .black.opacity(0.16),
+            radius: 15,
+            y: 7
+        )
+        .shadow(
+            color: .black.opacity(0.055),
+            radius: 3,
+            y: 1
         )
         .onAppear {
             DispatchQueue.main.async { isFocused = true }
