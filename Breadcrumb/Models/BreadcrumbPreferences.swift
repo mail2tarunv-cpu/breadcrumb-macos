@@ -37,9 +37,13 @@ enum BreadcrumbMarkerSize: String, CaseIterable, Identifiable {
     var fontSize: CGFloat {
         switch self {
         case .small: return 10.5
-        case .medium: return 11.5
-        case .large: return 12.5
+        case .medium: return 11.25
+        case .large: return 12.25
         }
+    }
+
+    var expandedWidth: CGFloat {
+        dimensions.width + 112
     }
 }
 
